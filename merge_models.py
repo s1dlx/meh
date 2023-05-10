@@ -20,7 +20,17 @@ def compute_weights(weights, base):
     "-m",
     "--merging_method",
     "merge_mode",
-    type=click.Choice(["weighted_sum", "add_difference"], case_sensitive=False),
+    type=click.Choice(
+        [
+            "weighted_sum",
+            "add_difference",
+            "weighted_subtraction",
+            "sum_twice",
+            "triple_sum",
+            "tensor_sum",
+        ],
+        case_sensitive=False,
+    ),
 )
 @click.option("-p", "--precision", "precision", type=int, default=16)
 @click.option("-s", "--skip_position_ids", "skip_position_ids", type=int, default=0)
