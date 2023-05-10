@@ -73,7 +73,7 @@ def main(
     print(weights)
 
     merged = merge(models, weights, bases, merge_mode, skip_position_ids, precision)
-    save_model(merged, output_file, output_format)
+    save_model(merged, output_path, output_format)
 
 
 if __name__ == "__main__":

@@ -112,7 +112,7 @@ def merge(
                         thetas["model_a"][key] = thetas["model_a"][key].half()
                     continue
             thetas["model_a"].update({key: thetas["model_b"][key]})
-            if best_precision == 16:
+            if precision == 16:
                 thetas["model_a"][key] = thetas["model_a"][key].half()
 
     thetas["model_a"] = fix_model(thetas["model_a"])
