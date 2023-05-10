@@ -1,6 +1,13 @@
 # sd-meh
 
 ```
+pip install sd-meh
+```
+
+---
+
+
+```
 Usage: merge_models.py [OPTIONS]
 
 Options:
