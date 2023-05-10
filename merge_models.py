@@ -1,6 +1,6 @@
 import click
 
-from meh.merge import NUM_TOTAL_BLOCKS, merge, save_model
+from sd_meh.merge import NUM_TOTAL_BLOCKS, merge, save_model
 
 
 def compute_weights(weights, base):
