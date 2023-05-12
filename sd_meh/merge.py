@@ -68,7 +68,6 @@ def merge_models(
     weights: Dict,
     bases: Dict,
     merge_mode: str,
-    skip_position_ids: int = 0,
     precision: int = 16,
 ) -> None:
     thetas = {k: load_sd_model(Path(m)) for k, m in models.items()}
@@ -80,7 +79,6 @@ def merge_models(
             weights,
             bases,
             merge_mode,
-            skip_position_ids,
             precision,
         ):
             thetas["model_a"][key] = result[1]
@@ -102,7 +100,6 @@ def merge_key(
     weights: Dict,
     bases: Dict,
     merge_mode: str,
-    skip_position_ids: int = 0,
     precision: int = 16,
 ) -> Tuple[str, Dict]:
     if KEY_POSITION_IDS in key:
