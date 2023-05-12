@@ -1,3 +1,5 @@
 click
+numpy
 safetensors
 torch
+tqdm
