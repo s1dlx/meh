@@ -1,3 +1,8 @@
 **/.DS_Store
 Makefile
 **/__pycache__/*
+dist/*
+*.toml
+**/*.png
+*.safetensors
+*.ckpt

@@ -1,14 +1,14 @@
 import click
 
-from sd_meh.merge import NUM_TOTAL_BLOCKS, merge, save_model
+from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
 
 
 def compute_weights(weights, base):
     if not weights:
-        return [base] * (NUM_TOTAL_BLOCKS - 1)
+        return [base] * NUM_TOTAL_BLOCKS
     if "," in weights:
         w_alpha = list(map(float, weights.split(",")))
-        if len(w_alpha) == NUM_TOTAL_BLOCKS - 1:
+        if len(w_alpha) == NUM_TOTAL_BLOCKS:
             return w_alpha
 
 
@@ -70,9 +70,9 @@ def main(
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
-    print(weights)
-
-    merged = merge(models, weights, bases, merge_mode, skip_position_ids, precision)
+    merged = merge_models(
+        models, weights, bases, merge_mode, skip_position_ids, precision
+    )
     save_model(merged, output_path, output_format)
 
 
