@@ -75,7 +75,7 @@ def merge_models(
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-    weights_clip: Optional[float] = None,
+    weights_clip: bool = False,
 ) -> Dict:
     thetas = {k: load_sd_model(Path(m)) for k, m in models.items()}
 
@@ -109,7 +109,7 @@ def merge_key(
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-    weights_clip: Optional[float] = None,
+    weights_clip: bool = False,
 ) -> Optional[Tuple[str, Dict]]:
     if KEY_POSITION_IDS in key:
         return
@@ -147,11 +147,11 @@ def merge_key(
 
         merged_key = merge(current_bases, thetas, key, merge_mode)
 
-        if weights_clip is not None:
+        if weights_clip:
             t0 = thetas["model_a"][key]
             t1 = thetas["model_b"][key]
             threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged_key = clip(merged_key, threshold, weights_clip)
+            merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
 
         if precision == 16:
             merged_key = merged_key.half()
@@ -159,18 +159,7 @@ def merge_key(
         return key, merged_key
 
 
-def clip(t, threshold, soft_amount):
-    soft_amount /= 10
-    if soft_amount <= EPSILON:
-        return torch.minimum(torch.maximum(t, -threshold), threshold)
-
-    def softplus(offset_t):
-        return torch.log(1 + torch.exp(offset_t / soft_amount / threshold)) * soft_amount * threshold
-
-    return softplus(threshold + t) - softplus(threshold - t) - t
-
-
-def merge(current_bases: Dict, thetas: Dict, key: str, merge_mode: str) -> Dict:
+def merge(current_bases: Dict, thetas: Dict, key: str, merge_mode: str) -> torch.Tensor:
     t0 = thetas["model_a"][key]
     t1 = thetas["model_b"][key]
     alpha = current_bases["alpha"]

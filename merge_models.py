@@ -32,7 +32,7 @@ def compute_weights(weights, base):
         case_sensitive=False,
     ),
 )
-@click.option("-wc", "--weights_clip", "weights_clip", type=float, flag_value=0., default=None)
+@click.option("-wc", "--weights_clip", "weights_clip", is_flag=True)
 @click.option("-p", "--precision", "precision", type=int, default=16)
 @click.option("-o", "--output_path", "output_path", type=str, default="model_out")
 @click.option(
