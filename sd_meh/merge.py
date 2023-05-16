@@ -75,7 +75,7 @@ def merge_models(
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-    weights_clipping: Optional[float] = None,
+    weights_clip: Optional[float] = None,
 ) -> Dict:
     thetas = {k: load_sd_model(Path(m)) for k, m in models.items()}
 
@@ -87,7 +87,7 @@ def merge_models(
             bases,
             merge_mode,
             precision,
-            weights_clipping,
+            weights_clip,
         ):
             thetas["model_a"][key] = result[1]
 
@@ -109,7 +109,7 @@ def merge_key(
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-    weights_clipping: Optional[float] = None,
+    weights_clip: Optional[float] = None,
 ) -> Optional[Tuple[str, Dict]]:
     if KEY_POSITION_IDS in key:
         return
@@ -147,11 +147,11 @@ def merge_key(
 
         merged_key = merge(current_bases, thetas, key, merge_mode)
 
-        if weights_clipping is not None:
+        if weights_clip is not None:
             t0 = thetas["model_a"][key]
             t1 = thetas["model_b"][key]
             threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged_key = clip(merged_key, threshold, weights_clipping)
+            merged_key = clip(merged_key, threshold, weights_clip)
 
         if precision == 16:
             merged_key = merged_key.half()
