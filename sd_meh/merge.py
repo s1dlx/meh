@@ -59,10 +59,7 @@ def fix_model(model: Dict) -> Dict:
     return fix_clip(model)
 
 
-def load_sd_model(model: os.PathLike | str | Dict, device: str = "cpu") -> Dict:
-    if isinstance(model, Dict):
-        return model
-
+def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     if isinstance(model, str):
         model = Path(model)
 
@@ -70,14 +67,14 @@ def load_sd_model(model: os.PathLike | str | Dict, device: str = "cpu") -> Dict:
 
 
 def merge_models(
-    models: Dict[str, os.PathLike],
+    models: Dict[str, os.PathLike | str],
     weights: Dict,
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
 ) -> Dict:
-    thetas = {k: load_sd_model(Path(m)) for k, m in models.items()}
+    thetas = {k: load_sd_model(m) for k, m in models.items()}
 
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         if result := merge_key(
