@@ -160,6 +160,7 @@ def merge_key(
 
 
 def clip(t, threshold, soft_amount):
+    soft_amount /= 10
     if soft_amount <= EPSILON:
         return torch.minimum(torch.maximum(t, -threshold), threshold)
 
