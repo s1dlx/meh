@@ -6,3 +6,4 @@ dist/*
 **/*.png
 *.safetensors
 *.ckpt
+.idea/

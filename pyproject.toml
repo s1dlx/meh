@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sd-meh"
-version = "0.1.1"
+version = "0.1.2"
 description = "stable diffusion merging execution helper"
 authors = ["s1dlx <s1dlx@proton.me>"]
 license = "MIT"
