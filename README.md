@@ -31,6 +31,7 @@ Options:
   -b, --model_b TEXT
   -c, --model_c TEXT
   -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum]
+  -wc, --weights_clip
   -p, --precision INTEGER
   -o, --output_path TEXT
   -f, --output_format [safetensors|ckpt]
@@ -43,6 +44,7 @@ Options:
 
 ## Features
 
+- weights clipping
 - registered pypi package
 - block merge
 - merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`
