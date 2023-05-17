@@ -2,7 +2,6 @@
 Makefile
 **/__pycache__/*
 dist/*
-*.toml
 **/*.png
 *.safetensors
 *.ckpt
