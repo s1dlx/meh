@@ -32,6 +32,7 @@ def compute_weights(weights, base):
         case_sensitive=False,
     ),
 )
+@click.option("-wc", "--weights_clip", "weights_clip", is_flag=True)
 @click.option("-p", "--precision", "precision", type=int, default=16)
 @click.option("-o", "--output_path", "output_path", type=str, default="model_out")
 @click.option(
@@ -49,6 +50,7 @@ def main(
     model_b,
     model_c,
     merge_mode,
+    weights_clip,
     precision,
     output_path,
     output_format,
@@ -69,7 +71,7 @@ def main(
         bases["beta"] = base_beta
 
     merged = merge_models(
-        models, weights, bases, merge_mode, precision
+        models, weights, bases, merge_mode, precision, weights_clip
     )
     save_model(merged, output_path, output_format)
 

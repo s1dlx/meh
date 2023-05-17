@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 import safetensors.torch
 import torch
@@ -59,18 +59,22 @@ def fix_model(model: Dict) -> Dict:
     return fix_clip(model)
 
 
-def load_sd_model(model_path: os.PathLike, device: str = "cpu") -> SDModel:
-    return SDModel(model_path, device).load_model()
+def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
+    if isinstance(model, str):
+        model = Path(model)
+
+    return SDModel(model, device).load_model()
 
 
 def merge_models(
-    models: Dict[str, os.PathLike],
+    models: Dict[str, os.PathLike | str],
     weights: Dict,
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-) -> None:
-    thetas = {k: load_sd_model(Path(m)) for k, m in models.items()}
+    weights_clip: bool = False,
+) -> Dict:
+    thetas = {k: load_sd_model(m) for k, m in models.items()}
 
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         if result := merge_key(
@@ -80,6 +84,7 @@ def merge_models(
             bases,
             merge_mode,
             precision,
+            weights_clip,
         ):
             thetas["model_a"][key] = result[1]
 
@@ -101,7 +106,8 @@ def merge_key(
     bases: Dict,
     merge_mode: str,
     precision: int = 16,
-) -> Tuple[str, Dict]:
+    weights_clip: bool = False,
+) -> Optional[Tuple[str, Dict]]:
     if KEY_POSITION_IDS in key:
         return
 
@@ -138,13 +144,19 @@ def merge_key(
 
         merged_key = merge(current_bases, thetas, key, merge_mode)
 
+        if weights_clip:
+            t0 = thetas["model_a"][key]
+            t1 = thetas["model_b"][key]
+            threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
+            merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
+
         if precision == 16:
             merged_key = merged_key.half()
 
-        return (key, merged_key)
+        return key, merged_key
 
 
-def merge(current_bases: Dict, thetas: Dict, key: str, merge_mode: str) -> Dict:
+def merge(current_bases: Dict, thetas: Dict, key: str, merge_mode: str) -> torch.Tensor:
     t0 = thetas["model_a"][key]
     t1 = thetas["model_b"][key]
     alpha = current_bases["alpha"]
