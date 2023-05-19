@@ -1,13 +1,14 @@
 import os
 import re
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 import safetensors.torch
 import torch
 from tqdm import tqdm
 
 from sd_meh.model import SDModel
+from sd_meh.rebasin import rebasin_merge
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -73,9 +74,27 @@ def merge_models(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
+    re_basin: bool = False,
+    iterations: int = 1,
 ) -> Dict:
     thetas = {k: load_sd_model(m) for k, m in models.items()}
 
+    if re_basin:
+        return rebasin_merge(
+            thetas, weights, bases, merge_mode, precision, weights_clip, iterations
+        )
+    else:
+        return simple_merge(thetas, weights, bases, merge_mode, precision, weights_clip)
+
+
+def simple_merge(
+    thetas: Dict[str, Dict],
+    weights: Dict,
+    bases: Dict,
+    merge_mode: str,
+    precision: int = 16,
+    weights_clip: bool = False,
+) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         if result := merge_key(
             key,

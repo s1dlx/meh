@@ -70,9 +70,7 @@ def main(
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
-    merged = merge_models(
-        models, weights, bases, merge_mode, precision, weights_clip
-    )
+    merged = merge_models(models, weights, bases, merge_mode, precision, weights_clip)
     save_model(merged, output_path, output_format)
 
 

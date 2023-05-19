@@ -44,6 +44,7 @@ Options:
 
 ## Features
 
+- weights matching
 - weights clipping
 - registered pypi package
 - block merge
