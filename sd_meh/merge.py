@@ -95,6 +95,7 @@ def merge_models(
             weights_clip=weights_clip,
             iterations=iterations,
             device="cpu",
+            fast=True,
         )
     else:
         return simple_merge(
@@ -147,12 +148,16 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
+    fast=True,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
     model_a = thetas["model_a"].copy()
     perm_spec = sdunet_permutation_spec()
+
+    print("permuting")
     for it in range(iterations):
+        print(it)
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
 
         # normal block merge we already know and love
@@ -161,24 +166,30 @@ def rebasin_merge(
         )
 
         # find permutations
-        print("permuting")
         perm_1, y = weight_matching(
             perm_spec,
             model_a,
             thetas["model_a"],
+            max_iter=it,
+            init_perm=None,
             usefp16=precision == 16,
             device=device,
+            fast=fast,
         )
         thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
         perm_2, z = weight_matching(
             perm_spec,
             thetas["model_b"],
             thetas["model_a"],
+            max_iter=it,
+            init_perm=None,
             usefp16=precision == 16,
             device=device,
+            fast=fast,
         )
         theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
+        # is this correct for block merge?
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]

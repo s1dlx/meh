@@ -2192,6 +2192,65 @@ def apply_permutation(ps: PermutationSpec, perm, params):
     return {k: get_permuted_param(ps, perm, k, params) for k in params.keys()}
 
 
+def inner_matching(
+    n,
+    ps,
+    p,
+    params_a,
+    params_b,
+    usefp16,
+    progress,
+    number,
+    linear_sum,
+    perm,
+    device,
+):
+    A = torch.zeros((n, n), dtype=torch.float16) if usefp16 else torch.zeros((n, n))
+
+    for wk, axis in ps.perm_to_axes[p]:
+        w_a = params_a[wk]
+        w_b = get_permuted_param(ps, perm, wk, params_b, except_axis=axis)
+        w_a = torch.moveaxis(w_a, axis, 0).reshape((n, -1)).to(device)
+        w_b = torch.moveaxis(w_b, axis, 0).reshape((n, -1)).T.to(device)
+
+        if usefp16:
+            w_a = w_a.half()
+            w_b = w_b.half()
+
+        try:
+            A += torch.matmul(w_a, w_b)
+        except RuntimeError:
+            A += torch.matmul(torch.dequantize(w_a), torch.dequantize(w_b))
+
+    A = A.cpu()
+    ri, ci = linear_sum_assignment(A.detach().numpy(), maximize=True)
+
+    if device == "cuda":
+        A = A.cuda()
+
+    assert (torch.tensor(ri) == torch.arange(len(ri))).all()
+
+    if usefp16:
+        oldL = torch.vdot(
+            torch.flatten(A), torch.flatten(torch.eye(n)[perm[p].long()]).half()
+        )
+        newL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]).half())
+    else:
+        oldL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[perm[p].long()]))
+        newL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]))
+
+    if newL - oldL != 0:
+        linear_sum += abs((newL - oldL).item())
+        number += 1
+        print(f" > {p}: {newL - oldL}")
+
+    progress = progress or newL > oldL + 1e-12
+
+    perm[p] = torch.Tensor(ci)
+
+    return linear_sum, number, perm, progress
+
+
 def weight_matching(
     ps: PermutationSpec,
     params_a,
@@ -2200,8 +2259,8 @@ def weight_matching(
     init_perm=None,
     usefp16=False,
     device="cpu",
+    fast=True,
 ):
-    """Find a permutation of `params_b` to make them match `params_a`."""
     perm_sizes = {
         p: params_a[axes[0][0]].shape[axes[0][1]] for p, axes in ps.perm_to_axes.items()
     }
@@ -2214,7 +2273,8 @@ def weight_matching(
     perm_names = list(perm.keys())
     linear_sum = 0
     number = 0
-    if usefp16:
+
+    if fast:
         special_layers = ["P_bg358", "P_bg324", "P_bg337"]
         for _ in range(max_iter):
             progress = False
@@ -2223,75 +2283,42 @@ def weight_matching(
                 p = p_ix
                 if p in special_layers:
                     n = perm_sizes[p]
-                    A = torch.zeros((n, n), dtype=torch.float16).to(device)
-                    for wk, axis in ps.perm_to_axes[p]:
-                        w_a = params_a[wk]
-                        w_b = get_permuted_param(
-                            ps, perm, wk, params_b, except_axis=axis
-                        )
-                        w_a = torch.moveaxis(w_a, axis, 0).reshape((n, -1)).to(device)
-                        w_b = torch.moveaxis(w_b, axis, 0).reshape((n, -1)).T.to(device)
-                        A += torch.matmul(w_a.half(), w_b.half())
 
-                    A = A.cpu()
-                    ri, ci = linear_sum_assignment(A.detach().numpy(), maximize=True)
-
-                    assert (torch.tensor(ri) == torch.arange(len(ri))).all()
-
-                    oldL = torch.vdot(
-                        torch.flatten(A),
-                        torch.flatten(torch.eye(n)[perm[p].long()]).half(),
+                    linear_sum, number, perm, progress = inner_matching(
+                        n,
+                        ps,
+                        p,
+                        params_a,
+                        params_b,
+                        usefp16,
+                        progress,
+                        number,
+                        linear_sum,
+                        perm,
+                        device,
                     )
-                    newL = torch.vdot(
-                        torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]).half()
-                    )
-
-                    if newL - oldL != 0:
-                        linear_sum += abs((newL - oldL).item())
-                        number += 1
-                        print(f"{p}: {newL - oldL}")
-
-                    progress = progress or newL > oldL + 1e-12
-
-                    perm[p] = torch.Tensor(ci)
-
             if not progress:
                 break
-
     else:
         for _ in range(max_iter):
             progress = False
             for p_ix in torch.randperm(len(perm_names)):
                 p = perm_names[p_ix]
                 n = perm_sizes[p]
-                A = torch.zeros((n, n))
-                for wk, axis in ps.perm_to_axes[p]:
-                    w_a = params_a[wk]
-                    w_b = get_permuted_param(ps, perm, wk, params_b, except_axis=axis)
-                    w_a = torch.moveaxis(w_a, axis, 0).reshape((n, -1)).to(device)
-                    w_b = torch.moveaxis(w_b, axis, 0).reshape((n, -1)).T.to(device)
-                    A += torch.matmul(
-                        torch.dequantize(w_a), torch.dequantize(w_b)
-                    ).cpu()
 
-                ri, ci = linear_sum_assignment(A.detach().numpy())
-
-                assert (torch.tensor(ri) == torch.arange(len(ri))).all()
-
-                oldL = torch.vdot(
-                    torch.flatten(A), torch.flatten(torch.eye(n)[perm[p].long()])
+                linear_sum, number, perm, progress = inner_matching(
+                    n,
+                    ps,
+                    p,
+                    params_a,
+                    params_b,
+                    usefp16,
+                    progress,
+                    number,
+                    linear_sum,
+                    perm,
+                    device,
                 )
-                newL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]))
-
-                if newL - oldL != 0:
-                    linear_sum += abs((newL - oldL).item())
-                    number += 1
-                    print(f"{p}: {newL - oldL}")
-
-                progress = progress or newL > oldL + 1e-12
-
-                perm[p] = torch.Tensor(ci)
-
             if not progress:
                 break
 
