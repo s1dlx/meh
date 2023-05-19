@@ -95,7 +95,6 @@ def merge_models(
             weights_clip=weights_clip,
             iterations=iterations,
             device="cpu",
-            fast=True,
         )
     else:
         return simple_merge(
@@ -148,7 +147,6 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
-    fast=True,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -174,7 +172,6 @@ def rebasin_merge(
             init_perm=None,
             usefp16=precision == 16,
             device=device,
-            fast=fast,
         )
         thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
         perm_2, z = weight_matching(
@@ -185,7 +182,6 @@ def rebasin_merge(
             init_perm=None,
             usefp16=precision == 16,
             device=device,
-            fast=fast,
         )
         theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
