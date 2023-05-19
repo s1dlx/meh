@@ -45,6 +45,10 @@ def compute_weights(weights, base):
 @click.option("-ba", "--base_alpha", "base_alpha", type=float, default=0.0)
 @click.option("-wb", "--weights_beta", "weights_beta", type=str, default=None)
 @click.option("-bb", "--base_beta", "base_beta", type=float, default=0.0)
+@click.option("-rb", "--re_basin", "re_basin", is_flag=True)
+@click.option(
+    "-rbi", "--re_basin_iterations", "re_basin_iterations", type=int, default=1
+)
 def main(
     model_a,
     model_b,
@@ -58,6 +62,8 @@ def main(
     base_alpha,
     weights_beta,
     base_beta,
+    re_basin,
+    re_basin_iterations,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
@@ -70,7 +76,16 @@ def main(
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
-    merged = merge_models(models, weights, bases, merge_mode, precision, weights_clip)
+    merged = merge_models(
+        models,
+        weights,
+        bases,
+        merge_mode,
+        precision,
+        weights_clip,
+        re_basin,
+        re_basin_iterations,
+    )
     save_model(merged, output_path, output_format)
 
 
