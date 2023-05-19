@@ -10,7 +10,7 @@ from tqdm import tqdm
 from sd_meh.model import SDModel
 from sd_meh.rebasin import (
     SPECIAL_KEYS,
-    flatten_params,
+    apply_permutation,
     sdunet_permutation_spec,
     step_weights_and_bases,
     weight_matching,
@@ -166,22 +166,21 @@ def rebasin_merge(
             perm_spec,
             model_a,
             thetas["model_a"],
-            usefp16=precision==16,
+            usefp16=precision == 16,
             device=device,
         )
         thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
         perm_2, z = weight_matching(
             perm_spec,
-            flatten_params(model_b),
+            thetas["model_b"],
             thetas["model_a"],
-            usefp16=precision==16,
+            usefp16=precision == 16,
             device=device,
         )
         theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
-        # TODO: how to turn this to block-merge?
         new_alpha = torch.nn.functional.normalize(
-            torch.sigmoid(toch.Tensor([y, z])), p=1, dim=0
+            torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
         for key in SPECIAL_KEYS:
             thetas["model_a"][key] = (1 - new_alpha) * (
