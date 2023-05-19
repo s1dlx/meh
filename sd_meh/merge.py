@@ -8,7 +8,13 @@ import torch
 from tqdm import tqdm
 
 from sd_meh.model import SDModel
-from sd_meh.rebasin import SPECIAL_KEYS, flatten_params, step_weights_and_bases
+from sd_meh.rebasin import (
+    SPECIAL_KEYS,
+    flatten_params,
+    sdunet_permutation_spec,
+    step_weights_and_bases,
+    weight_matching,
+)
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -81,10 +87,24 @@ def merge_models(
 
     if re_basin:
         return rebasin_merge(
-            thetas, weights, bases, merge_mode, precision, weights_clip, iterations
+            thetas,
+            weights,
+            bases,
+            merge_mode,
+            precision=precision,
+            weights_clip=weights_clip,
+            iterations=iterations,
+            device="cpu",
         )
     else:
-        return simple_merge(thetas, weights, bases, merge_mode, precision, weights_clip)
+        return simple_merge(
+            thetas,
+            weights,
+            bases,
+            merge_mode,
+            precision=precision,
+            weights_clip=weights_clip,
+        )
 
 
 def simple_merge(
@@ -126,40 +146,49 @@ def rebasin_merge(
     precision: int = 16,
     weights_clip: bool = False,
     iterations: int = 1,
+    device="cpu",
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
-    model_a = thetas["theta_0"].copy()
+    model_a = thetas["model_a"].copy()
     perm_spec = sdunet_permutation_spec()
     for it in range(iterations):
-        new_weights, new_bases = step_weights_and_bases(weigths, bases, it, iterations)
+        new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
 
         # normal block merge we already know and love
-        thetas["theta_0"] = simple_merge(
+        thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
 
         # find permutations
         print("permuting")
         perm_1, y = weight_matching(
-            perm_spec, flatten_params(model_a), thetas["theta_0"], usefp16=True
+            perm_spec,
+            model_a,
+            thetas["model_a"],
+            usefp16=precision==16,
+            device=device,
         )
-        thetas["theta_0"] = apply_permutation(perm_spec, perm_1, thetas["theta_0"])
+        thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
         perm_2, z = weight_matching(
-            perm_spec, flatten_params(model_b), thetas["theta_0"], usefp16=True
+            perm_spec,
+            flatten_params(model_b),
+            thetas["model_a"],
+            usefp16=precision==16,
+            device=device,
         )
-        theta_3 = apply_permutation(perm_spec, perm_2, thetas["theta_0"])
+        theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
         # TODO: how to turn this to block-merge?
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(toch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
         for key in SPECIAL_KEYS:
-            thetas["theta_0"][key] = (1 - new_alpha) * (
-                thetas["theta_0"][key]
+            thetas["model_a"][key] = (1 - new_alpha) * (
+                thetas["model_a"][key]
             ) + new_alpha * theta_3[key]
 
-    return thetas["theta_0"]
+    return thetas["model_a"]
 
 
 def merge_key(
