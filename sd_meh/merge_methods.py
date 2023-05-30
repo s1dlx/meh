@@ -60,7 +60,7 @@ def triple_sum(
 
 
 def similarity_add_difference(
-        a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     threshold = torch.maximum(torch.abs(a), torch.abs(b))
     similarity = ((a * b / threshold**2) + 1) / 2
