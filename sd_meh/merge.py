@@ -1,14 +1,15 @@
 import os
 import re
+import sys
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 import safetensors.torch
 import torch
 from tqdm import tqdm
 
-from sd_meh.model import SDModel
 from sd_meh import merge_methods
+from sd_meh.model import SDModel
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -142,7 +143,12 @@ def merge_key(
             if weight_index >= 0:
                 current_bases = {k: w[weight_index] for k, w in weights.items()}
 
-        merge_method = getattr(merge_methods, merge_mode)
+        try:
+            merge_method = getattr(merge_methods, merge_mode)
+        except AttributeError:
+            print(f"{merge_mode} not implemented, aborting merge!")
+            sys.exit(1)
+
         merge_args = get_merge_method_args(current_bases, thetas, key)
         merged_key = merge_method(**merge_args)
 
@@ -166,9 +172,11 @@ def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
     }
 
     if "model_c" in thetas:
-        merge_method_args.update({
-            "c": thetas["model_c"][key],
-        })
+        merge_method_args.update(
+            {
+                "c": thetas["model_c"][key],
+            }
+        )
 
     return merge_method_args
 
