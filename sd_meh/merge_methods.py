@@ -55,7 +55,7 @@ def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwa
 
 
 def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    t0_values = torch.msort(torch.flatten(a))
-    t1_indices = torch.argsort(torch.flatten(b), stable=True)
-    redistributed_t0_values = torch.gather(t0_values, 0, torch.argsort(t1_indices))
-    return redistributed_t0_values.reshape(a.shape)
+    a_values = torch.msort(torch.flatten(a))
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
+    redistributed_a_values = torch.gather(a_values, 0, torch.argsort(b_indices))
+    return redistributed_a_values.reshape(a.shape)
