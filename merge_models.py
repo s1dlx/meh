@@ -6,7 +6,7 @@ from sd_meh import merge_methods
 
 
 merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
-beta_methods = [name for name, fn in merge_methods if 'beta' in inspect.getfullargspec(fn)[0]]
+beta_methods = [name for name, fn in merge_methods.items() if 'beta' in inspect.getfullargspec(fn)[0]]
 
 
 def compute_weights(weights, base):
