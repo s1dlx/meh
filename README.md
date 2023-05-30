@@ -47,5 +47,5 @@ Options:
 - weights clipping
 - registered pypi package
 - block merge
-- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`
+- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `similarity_add_difference`
 - `fp16` and `fp32`
