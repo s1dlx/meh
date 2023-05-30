@@ -8,7 +8,6 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
-    "euclidian_add_difference",
 ]
 
 
@@ -51,14 +50,3 @@ def sum_twice(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, b
 
 def triple_sum(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, beta: float, **kwargs) -> torch.Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
-
-
-def euclidian_add_difference(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, **kwargs) -> torch.Tensor:
-    distance = (a - c) ** 2 + alpha * (b - c) ** 2
-    try:
-        distance = torch.sqrt(distance)
-    except RuntimeError:
-        distance = torch.sqrt(distance.float()).half()
-    distance = torch.copysign(distance, a + b - 2 * c)
-    norm = (torch.linalg.norm(a - c) + torch.linalg.norm(b - c)) / 2
-    return c + distance / torch.linalg.norm(distance) * norm
