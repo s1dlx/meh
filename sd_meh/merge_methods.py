@@ -54,7 +54,7 @@ def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwa
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def multiply_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+def multiply_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs):
     difference = torch.abs((a - c) * (b - c))
     try:
         difference = torch.sqrt(difference)
