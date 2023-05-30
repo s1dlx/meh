@@ -61,5 +61,5 @@ def euclidian_weighted_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwar
     except RuntimeError:
         distance = torch.sqrt(distance.float()).half()
     distance = torch.copysign(distance, (1 - alpha) * (a - c) + alpha * (b - c))
-    norm = ((1 - alpha) * torch.linalg.norm(a - c) + alpha * torch.linalg.norm(b - c)) / 2
+    norm = (1 - alpha) * torch.linalg.norm(a - c) + alpha * torch.linalg.norm(b - c)
     return c + distance / torch.linalg.norm(distance) * norm
