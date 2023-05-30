@@ -1,3 +1,4 @@
+import torch
 from torch import Tensor
 
 
@@ -8,6 +9,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "similarity_add_difference",
 ]
 
 
@@ -50,3 +52,13 @@ def sum_twice(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwar
 
 def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def similarity_add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
+    threshold = torch.maximum(torch.abs(a), torch.abs(b))
+    similarity = ((a * b / threshold ** 2) + 1) / 2
+    similarity = torch.nan_to_num(similarity * beta, nan=beta)
+
+    ab_diff = a + alpha * (b - c)
+    ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
+    return (1 - similarity) * ab_diff + similarity * ab_sum
