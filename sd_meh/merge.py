@@ -8,13 +8,13 @@ import torch
 from tqdm import tqdm
 
 from sd_meh.model import SDModel
+from sd_meh import merge_methods
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
 NUM_MID_BLOCK = 1
 NUM_OUTPUT_BLOCKS = 12
 NUM_TOTAL_BLOCKS = NUM_INPUT_BLOCKS + NUM_MID_BLOCK + NUM_OUTPUT_BLOCKS
-EPSILON = 1e-10  # Define a small constant EPSILON to prevent division by zero
 
 KEY_POSITION_IDS = ".".join(
     [
@@ -142,7 +142,9 @@ def merge_key(
             if weight_index >= 0:
                 current_bases = {k: w[weight_index] for k, w in weights.items()}
 
-        merged_key = merge(current_bases, thetas, key, merge_mode)
+        merge_method = getattr(merge_methods, merge_mode)
+        merge_args = get_merge_method_args(current_bases, thetas, key)
+        merged_key = merge_method(**merge_args)
 
         if weights_clip:
             t0 = thetas["model_a"][key]
@@ -156,39 +158,19 @@ def merge_key(
         return key, merged_key
 
 
-def merge(current_bases: Dict, thetas: Dict, key: str, merge_mode: str) -> torch.Tensor:
-    t0 = thetas["model_a"][key]
-    t1 = thetas["model_b"][key]
-    alpha = current_bases["alpha"]
-    if merge_mode == "weighted_sum":
-        return (1 - alpha) * t0 + alpha * t1
-    elif merge_mode == "weighted_subtraction":
-        beta = current_bases["beta"]
-        # Adjust beta if both alpha and beta are 1.0 to avoid division by zero
-        if alpha == 1.0 and beta == 1.0:
-            beta -= EPSILON
-        return (t0 - alpha * beta * t1) / (1 - alpha * beta)
-    elif merge_mode == "tensor_sum":
-        beta = current_bases["beta"]
-        if alpha + beta <= 1:
-            tt = t0.clone()
-            talphas = int(t0.shape[0] * (beta))
-            talphae = int(t0.shape[0] * (alpha + beta))
-            tt[talphas:talphae] = t1[talphas:talphae].clone()
-        else:
-            talphas = int(t0.shape[0] * (alpha + beta - 1))
-            talphae = int(t0.shape[0] * (beta))
-            tt = t1.clone()
-            tt[talphas:talphae] = t0[talphas:talphae].clone()
-        return tt
-    t2 = thetas["model_c"][key]
-    if merge_mode == "add_difference":
-        return t0 + alpha * (t1 - t2)
-    beta = current_bases["beta"]
-    if merge_mode == "sum_twice":
-        return (1 - beta) * ((1 - alpha) * t0 + alpha * t1) + beta * t2
-    elif merge_mode == "triple_sum":
-        return (1 - alpha - beta) * t0 + alpha * t1 + beta * t2
+def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
+    merge_method_args = {
+        "a": thetas["model_a"][key],
+        "b": thetas["model_b"][key],
+        **current_bases,
+    }
+
+    if "model_c" in thetas:
+        merge_method_args.update({
+            "c": thetas["model_c"][key],
+        })
+
+    return merge_method_args
 
 
 def save_model(model, output_file, file_format) -> None:

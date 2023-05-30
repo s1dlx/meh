@@ -1,6 +1,12 @@
 import click
+import inspect
 
 from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
+from sd_meh import merge_methods
+
+
+merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
+beta_methods = [name for name, fn in merge_methods.items() if 'beta' in inspect.getfullargspec(fn)[0]]
 
 
 def compute_weights(weights, base):
@@ -20,17 +26,7 @@ def compute_weights(weights, base):
     "-m",
     "--merging_method",
     "merge_mode",
-    type=click.Choice(
-        [
-            "weighted_sum",
-            "add_difference",
-            "weighted_subtraction",
-            "sum_twice",
-            "triple_sum",
-            "tensor_sum",
-        ],
-        case_sensitive=False,
-    ),
+    type=click.Choice(list(merge_methods.keys()), case_sensitive=False),
 )
 @click.option("-wc", "--weights_clip", "weights_clip", is_flag=True)
 @click.option("-p", "--precision", "precision", type=int, default=16)
@@ -66,7 +62,7 @@ def main(
     bases = {"alpha": base_alpha}
     weights = {"alpha": compute_weights(weights_alpha, base_alpha)}
 
-    if merge_mode in ["weighted_subtraction", "tensor_sum", "sum_twice", "triple_sum"]:
+    if merge_mode in beta_methods:
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
