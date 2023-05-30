@@ -6,3 +6,6 @@ dist/*
 *.safetensors
 *.ckpt
 .idea/
+.mypy_cache/*
+**/*.swp
+**/*.swo
