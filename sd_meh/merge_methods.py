@@ -1,3 +1,4 @@
+import torch
 from torch import Tensor
 
 
@@ -8,6 +9,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "multiply_difference",
 ]
 
 
@@ -50,3 +52,13 @@ def sum_twice(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwar
 
 def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def multiply_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+    difference = torch.abs((a - c) * (b - c))
+    try:
+        difference = torch.sqrt(difference)
+    except RuntimeError:
+        difference = torch.sqrt(difference.float()).half()
+    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
+    return c + alpha * difference
