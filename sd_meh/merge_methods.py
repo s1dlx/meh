@@ -63,7 +63,7 @@ def similarity_add_difference(
         a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     threshold = torch.maximum(torch.abs(a), torch.abs(b))
-    similarity = ((a * b / threshold ** 2) + 1) / 2
+    similarity = ((a * b / threshold**2) + 1) / 2
     similarity = torch.nan_to_num(similarity * beta, nan=beta)
 
     ab_diff = a + alpha * (b - c)
