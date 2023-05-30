@@ -9,7 +9,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
-    "euclidian_add_difference",
+    "euclidian_weighted_sum",
 ]
 
 
@@ -54,7 +54,7 @@ def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwa
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def euclidian_add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+def euclidian_weighted_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
     distance = (1 - alpha) * (a - c) ** 2 + alpha * (b - c) ** 2
     try:
         distance = torch.sqrt(distance)
