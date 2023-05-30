@@ -1,14 +1,15 @@
 import os
 import re
+import sys
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 import safetensors.torch
 import torch
 from tqdm import tqdm
 
-from sd_meh.model import SDModel
 from sd_meh import merge_methods
+from sd_meh.model import SDModel
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -171,9 +172,11 @@ def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
     }
 
     if "model_c" in thetas:
-        merge_method_args.update({
-            "c": thetas["model_c"][key],
-        })
+        merge_method_args.update(
+            {
+                "c": thetas["model_c"][key],
+            }
+        )
 
     return merge_method_args
 
