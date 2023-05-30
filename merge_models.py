@@ -1,12 +1,16 @@
-import click
 import inspect
 
-from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
-from sd_meh import merge_methods
+import click
 
+from sd_meh import merge_methods
+from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
 
 merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
-beta_methods = [name for name, fn in merge_methods.items() if 'beta' in inspect.getfullargspec(fn)[0]]
+beta_methods = [
+    name
+    for name, fn in merge_methods.items()
+    if "beta" in inspect.getfullargspec(fn)[0]
+]
 
 
 def compute_weights(weights, base):
@@ -66,9 +70,7 @@ def main(
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
-    merged = merge_models(
-        models, weights, bases, merge_mode, precision, weights_clip
-    )
+    merged = merge_models(models, weights, bases, merge_mode, precision, weights_clip)
     save_model(merged, output_path, output_format)
 
 
