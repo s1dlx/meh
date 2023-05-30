@@ -1,4 +1,4 @@
-import torch
+from torch import Tensor
 
 
 __all__ = [
@@ -15,11 +15,11 @@ __all__ = [
 EPSILON = 1e-10  # Define a small constant EPSILON to prevent division by zero
 
 
-def weighted_sum(a: torch.Tensor, b: torch.Tensor, alpha: float, **kwargs) -> torch.Tensor:
+def weighted_sum(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
     return (1 - alpha) * a + alpha * b
 
 
-def weighted_subtraction(a: torch.Tensor, b: torch.Tensor, alpha: float, beta: float, **kwargs) -> torch.Tensor:
+def weighted_subtraction(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     # Adjust beta if both alpha and beta are 1.0 to avoid division by zero
     if alpha == 1.0 and beta == 1.0:
         beta -= EPSILON
@@ -27,7 +27,7 @@ def weighted_subtraction(a: torch.Tensor, b: torch.Tensor, alpha: float, beta: f
     return (a - alpha * beta * b) / (1 - alpha * beta)
 
 
-def tensor_sum(a: torch.Tensor, b: torch.Tensor, alpha: float, beta: float, **kwargs) -> torch.Tensor:
+def tensor_sum(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     if alpha + beta <= 1:
         tt = a.clone()
         talphas = int(a.shape[0] * beta)
@@ -41,15 +41,15 @@ def tensor_sum(a: torch.Tensor, b: torch.Tensor, alpha: float, beta: float, **kw
     return tt
 
 
-def add_difference(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, **kwargs) -> torch.Tensor:
+def add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
     return a + alpha * (b - c)
 
 
-def sum_twice(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, beta: float, **kwargs) -> torch.Tensor:
+def sum_twice(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     return (1 - beta) * ((1 - alpha) * a + alpha * b) + beta * c
 
 
-def triple_sum(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, alpha: float, beta: float, **kwargs) -> torch.Tensor:
+def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
