@@ -1,7 +1,6 @@
 import torch
 from torch import Tensor
 
-
 __all__ = [
     "weighted_sum",
     "weighted_subtraction",
@@ -20,7 +19,9 @@ def weighted_sum(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
     return (1 - alpha) * a + alpha * b
 
 
-def weighted_subtraction(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
+def weighted_subtraction(
+    a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
     # Adjust beta if both alpha and beta are 1.0 to avoid division by zero
     if alpha == 1.0 and beta == 1.0:
         beta -= EPSILON
@@ -46,15 +47,21 @@ def add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> T
     return a + alpha * (b - c)
 
 
-def sum_twice(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
+def sum_twice(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
     return (1 - beta) * ((1 - alpha) * a + alpha * b) + beta * c
 
 
-def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
+def triple_sum(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def similarity_add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
+def similarity_add_difference(
+        a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
     threshold = torch.maximum(torch.abs(a), torch.abs(b))
     similarity = ((a * b / threshold ** 2) + 1) / 2
     similarity = torch.nan_to_num(similarity * beta, nan=beta)
