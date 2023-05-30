@@ -67,6 +67,6 @@ def euclidian_add_difference(
         distance = torch.sqrt(distance)
     except RuntimeError:
         distance = torch.sqrt(distance.float()).half()
-    distance = torch.copysign(distance, a + b - 2 * c)
-    norm = (torch.linalg.norm(a - c) + torch.linalg.norm(b - c)) / 2
+    distance = torch.copysign(distance, (a - c) + alpha * (b - c))
+    norm = (1 - alpha / 2) * torch.linalg.norm(a - c) + (alpha / 2) * torch.linalg.norm(b - c)
     return c + distance / torch.linalg.norm(distance) * norm
