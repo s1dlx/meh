@@ -142,7 +142,12 @@ def merge_key(
             if weight_index >= 0:
                 current_bases = {k: w[weight_index] for k, w in weights.items()}
 
-        merge_method = getattr(merge_methods, merge_mode)
+        try:
+            merge_method = getattr(merge_methods, merge_mode)
+        except AttributeError:
+            print(f"{merge_mode} not implemented, aborting merge!")
+            sys.exit(1)
+
         merge_args = get_merge_method_args(current_bases, thetas, key)
         merged_key = merge_method(**merge_args)
 
