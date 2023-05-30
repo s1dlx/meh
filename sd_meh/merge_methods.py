@@ -1,3 +1,4 @@
+import torch
 from torch import Tensor
 
 
@@ -8,6 +9,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "transmogrify_distribution",
 ]
 
 
@@ -50,3 +52,10 @@ def sum_twice(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwar
 
 def triple_sum(a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
+    t0_values = torch.msort(torch.flatten(a))
+    t1_indices = torch.argsort(torch.flatten(b), stable=True)
+    redistributed_t0_values = torch.gather(t0_values, 0, torch.argsort(t1_indices))
+    return redistributed_t0_values.reshape(a.shape)
