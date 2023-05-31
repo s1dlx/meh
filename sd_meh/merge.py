@@ -242,8 +242,8 @@ def merge_key(
 
         try:
             merge_method = getattr(merge_methods, merge_mode)
-        except AttributeError:
-            raise ValueError(f"{merge_mode} not implemented, aborting merge!")
+        except AttributeError as e:
+            raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
         merge_args = get_merge_method_args(current_bases, thetas, key)
         merged_key = merge_method(**merge_args)
@@ -268,11 +268,7 @@ def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
     }
 
     if "model_c" in thetas:
-        merge_method_args.update(
-            {
-                "c": thetas["model_c"][key],
-            }
-        )
+        merge_method_args["c"] = thetas["model_c"][key]
 
     return merge_method_args
 
