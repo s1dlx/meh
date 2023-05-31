@@ -82,8 +82,9 @@ def merge_models(
     weights_clip: bool = False,
     re_basin: bool = False,
     iterations: int = 1,
+    device: str = 'cpu',
 ) -> Dict:
-    thetas = {k: load_sd_model(m) for k, m in models.items()}
+    thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
     if re_basin:
         return rebasin_merge(
@@ -94,7 +95,7 @@ def merge_models(
             precision=precision,
             weights_clip=weights_clip,
             iterations=iterations,
-            device="cpu",
+            device=device,
         )
     else:
         return simple_merge(
