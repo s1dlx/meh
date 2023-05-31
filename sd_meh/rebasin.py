@@ -2231,11 +2231,9 @@ def inner_matching(
     assert (torch.tensor(ri) == torch.arange(len(ri))).all()
 
     oldL = torch.vdot(
-        torch.flatten(A).long(), torch.flatten(torch.eye(n)[perm[p].long()]).long()
+        torch.flatten(A).float(), torch.flatten(torch.eye(n)[perm[p].long()])
     )
-    newL = torch.vdot(
-        torch.flatten(A).long(), torch.flatten(torch.eye(n)[ci, :]).long()
-    )
+    newL = torch.vdot(torch.flatten(A).float(), torch.flatten(torch.eye(n)[ci, :]))
 
     if usefp16:
         oldL = oldL.half()
