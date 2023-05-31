@@ -2230,14 +2230,16 @@ def inner_matching(
 
     assert (torch.tensor(ri) == torch.arange(len(ri))).all()
 
+    oldL = torch.vdot(
+        torch.flatten(A).long(), torch.flatten(torch.eye(n)[perm[p].long()]).long()
+    )
+    newL = torch.vdot(
+        torch.flatten(A).long(), torch.flatten(torch.eye(n)[ci, :]).long()
+    )
+
     if usefp16:
-        oldL = torch.vdot(
-            torch.flatten(A), torch.flatten(torch.eye(n)[perm[p].long()]).half()
-        )
-        newL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]).half())
-    else:
-        oldL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[perm[p].long()]))
-        newL = torch.vdot(torch.flatten(A), torch.flatten(torch.eye(n)[ci, :]))
+        oldL = oldL.half()
+        newL = newL.half()
 
     if newL - oldL != 0:
         linear_sum += abs((newL - oldL).item())
