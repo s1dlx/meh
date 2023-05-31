@@ -8,6 +8,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "transmogrify_distribution",
     "similarity_add_difference",
 ]
 
@@ -57,6 +58,13 @@ def triple_sum(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
+    a_values = torch.msort(torch.flatten(a))
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
+    redistributed_a_values = torch.gather(a_values, 0, torch.argsort(b_indices))
+    return redistributed_a_values.reshape(a.shape)
 
 
 def similarity_add_difference(
