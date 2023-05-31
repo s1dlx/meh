@@ -96,8 +96,8 @@ def distribution_crossover(
     dft_filter = torch.arange(0, torch.numel(a_dft), device=a_dft.device).float()
     dft_filter /= torch.numel(a_dft)
     if beta > EPSILON:
-        dft_filter = (dft_filter - alpha) / beta + 1/2
-        dft_filter = torch.clamp(dft_filter, 0., 1.)
+        dft_filter = (dft_filter - alpha) / beta + 1 / 2
+        dft_filter = torch.clamp(dft_filter, 0.0, 1.0)
     else:
         dft_filter = (dft_filter >= alpha).float()
 
