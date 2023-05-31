@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -146,8 +145,7 @@ def merge_key(
         try:
             merge_method = getattr(merge_methods, merge_mode)
         except AttributeError:
-            print(f"{merge_mode} not implemented, aborting merge!")
-            sys.exit(1)
+            raise ValueError(f"{merge_mode} not implemented, aborting merge!")
 
         merge_args = get_merge_method_args(current_bases, thetas, key)
         merged_key = merge_method(**merge_args)

@@ -8,7 +8,9 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
-    "distribution_crossover"
+    "transmogrify_distribution",
+    "similarity_add_difference",
+    "distribution_crossover",
 ]
 
 
@@ -57,6 +59,25 @@ def triple_sum(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
+    a_values = torch.msort(torch.flatten(a))
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
+    redistributed_a_values = torch.gather(a_values, 0, torch.argsort(b_indices))
+    return redistributed_a_values.reshape(a.shape)
+
+
+def similarity_add_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
+    threshold = torch.maximum(torch.abs(a), torch.abs(b))
+    similarity = ((a * b / threshold**2) + 1) / 2
+    similarity = torch.nan_to_num(similarity * beta, nan=beta)
+
+    ab_diff = a + alpha * (b - c)
+    ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
+    return (1 - similarity) * ab_diff + similarity * ab_sum
 
 
 def distribution_crossover(
