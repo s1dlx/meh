@@ -8,7 +8,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
-    "euclidian_add_difference",
+    "euclidean_add_difference",
 ]
 
 
@@ -59,7 +59,7 @@ def triple_sum(
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def euclidian_add_difference(
+def euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
     distance = (a - c) ** 2 + alpha * (b - c) ** 2

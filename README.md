@@ -30,7 +30,7 @@ Options:
   -a, --model_a TEXT
   -b, --model_b TEXT
   -c, --model_c TEXT
-  -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum|euclidian_add_difference]
+  -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum|euclidean_add_difference]
   -wc, --weights_clip
   -p, --precision INTEGER
   -o, --output_path TEXT
@@ -47,5 +47,5 @@ Options:
 - weights clipping
 - registered pypi package
 - block merge
-- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `euclidian_add_difference`
+- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `euclidean_add_difference`
 - `fp16` and `fp32`
