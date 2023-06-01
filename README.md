@@ -41,6 +41,7 @@ Options:
   -bb, --base_beta FLOAT
   -rb, --re_basin
   -rbi, --re_basin_iterations INTEGER
+  -d, --device [cpu|cuda]
   --help                          Show this message and exit.
 ```
 

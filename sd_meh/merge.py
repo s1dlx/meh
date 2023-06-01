@@ -82,7 +82,7 @@ def merge_models(
     weights_clip: bool = False,
     re_basin: bool = False,
     iterations: int = 1,
-    device: str = 'cpu',
+    device: str = "cpu",
 ) -> Dict:
     thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
