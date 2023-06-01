@@ -2265,7 +2265,7 @@ def weight_matching(
     }
     perm = {}
     perm = (
-        {p: torch.arange(n) for p, n in perm_sizes.items()}
+        {p: torch.arange(n).to(device) for p, n in perm_sizes.items()}
         if init_perm is None
         else init_perm
     )
