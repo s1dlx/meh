@@ -2214,8 +2214,8 @@ def inner_matching(
         w_b = torch.moveaxis(w_b, axis, 0).reshape((n, -1)).T.to(device)
 
         if usefp16:
-            w_a = w_a.half()
-            w_b = w_b.half()
+            w_a = w_a.half().to(device)
+            w_b = w_b.half().to(device)
 
         try:
             A += torch.matmul(w_a, w_b)
