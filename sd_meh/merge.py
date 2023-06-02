@@ -161,9 +161,13 @@ def rebasin_merge(
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
 
         # normal block merge we already know and love
+        if 'model_c' in thetas and device != 'cpu':
+            thetas['model_c'] = {k, v.to(device) for k, v in thetas['model_c'].items()}
         thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
+        if 'model_c' in thetas and device != 'cpu':
+            thetas['model_c'] = {k, v.to('cpu') for k, v in thetas['model_c'].items()}
 
         # find permutations
         perm_1, y = weight_matching(
@@ -185,20 +189,10 @@ def rebasin_merge(
             usefp16=precision == 16,
             device=device,
         )
-        # theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
-        # # WARNING: is this correct for block merge?
-        # # double WARNING: is this correct for anything != weighted_sum?
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
-        # for key in SPECIAL_KEYS:
-        #     thetas["model_a"][key] = (1 - new_alpha) * (
-        #         thetas["model_a"][key]
-        #     ) + new_alpha * theta_3[key]
-
-        # del theta_3
-
         thetas['model_a'] = update_model_A(perm_spec, perm_2, thetas['model_a'], new_alpha)
         del perm_1, perm_2
 

@@ -2181,7 +2181,7 @@ def get_permuted_param(ps: PermutationSpec, perm, k: str, params, except_axis=No
             continue
 
         # None indicates that there is no permutation relevant to that axis.
-        if p is not None:
+        if p:
             w = torch.index_select(w, axis, perm[p].int())
 
     return w
@@ -2194,8 +2194,7 @@ def apply_permutation(ps: PermutationSpec, perm, params):
 
 def update_model_A(ps: PermutationSpec, perm, model_a, new_alpha):
     for k in SPECIAL_KEYS:
-        p = get_permuted_param(ps, perm, k, model_a)
-        model_a[k] = model_a[k]*(1-new_alpha) + new_alpha*p[k]
+        model_a[k] = model_a[k]*(1-new_alpha) + new_alpha*get_permuted_param(ps, perm, k, model_a)
     return model_a
 
 
