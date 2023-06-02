@@ -2206,6 +2206,7 @@ def inner_matching(
     device,
 ):
     A = torch.zeros((n, n), dtype=torch.float16) if usefp16 else torch.zeros((n, n))
+    A = A.to(device)
 
     for wk, axis in ps.perm_to_axes[p]:
         w_a = params_a[wk]
@@ -2224,16 +2225,16 @@ def inner_matching(
 
     A = A.cpu()
     ri, ci = linear_sum_assignment(A.detach().numpy(), maximize=True)
-
-    if device == "cuda":
-        A = A.cuda()
+    A = A.to(device)
 
     assert (torch.tensor(ri) == torch.arange(len(ri))).all()
 
+    eye_tensor = torch.eye(n).to(device)
+
     oldL = torch.vdot(
-        torch.flatten(A).float(), torch.flatten(torch.eye(n)[perm[p].long()])
+        torch.flatten(A).float(), torch.flatten(eye_tensor[perm[p].long()])
     )
-    newL = torch.vdot(torch.flatten(A).float(), torch.flatten(torch.eye(n)[ci, :]))
+    newL = torch.vdot(torch.flatten(A).float(), torch.flatten(eye_tensor[ci, :]))
 
     if usefp16:
         oldL = oldL.half()
@@ -2246,7 +2247,7 @@ def inner_matching(
 
     progress = progress or newL > oldL + 1e-12
 
-    perm[p] = torch.Tensor(ci)
+    perm[p] = torch.Tensor(ci).to(device)
 
     return linear_sum, number, perm, progress
 
