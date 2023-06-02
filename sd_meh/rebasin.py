@@ -2193,9 +2193,9 @@ def apply_permutation(ps: PermutationSpec, perm, params):
 
 
 def update_model_A(ps: PermutationSpec, perm, model_a, new_alpha):
+    p = get_permuted_param(ps, perm, k, model_a)
     for k in model_a:
-        p = get_permuted_param(ps, perm, k, model_a)
-        model_a[k] = model_a[k]*(1-new_alpha) + new_alpha*p
+        model_a[k] = model_a[k]*(1-new_alpha) + new_alpha*p[k]
     return model_a
 
 
