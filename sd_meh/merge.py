@@ -10,12 +10,11 @@ from tqdm import tqdm
 from sd_meh import merge_methods
 from sd_meh.model import SDModel
 from sd_meh.rebasin import (
-    SPECIAL_KEYS,
     apply_permutation,
     sdunet_permutation_spec,
     step_weights_and_bases,
+    update_model_a,
     weight_matching,
-    update_model_A,
 )
 
 MAX_TOKENS = 77
@@ -161,13 +160,9 @@ def rebasin_merge(
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
 
         # normal block merge we already know and love
-        if 'model_c' in thetas and device != 'cpu':
-            thetas['model_c'] = {k: v.to(device) for k, v in thetas['model_c'].items()}
         thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
-        if 'model_c' in thetas and device != 'cpu':
-            thetas['model_c'] = {k: v.to('cpu') for k, v in thetas['model_c'].items()}
 
         # find permutations
         perm_1, y = weight_matching(
@@ -193,7 +188,9 @@ def rebasin_merge(
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
-        thetas['model_a'] = update_model_A(perm_spec, perm_2, thetas['model_a'], new_alpha)
+        thetas["model_a"] = update_model_a(
+            perm_spec, perm_2, thetas["model_a"], new_alpha
+        )
 
     return thetas["model_a"]
 

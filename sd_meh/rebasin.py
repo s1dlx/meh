@@ -2189,12 +2189,14 @@ def get_permuted_param(ps: PermutationSpec, perm, k: str, params, except_axis=No
 
 def apply_permutation(ps: PermutationSpec, perm, params):
     """Apply a `perm` to `params`."""
-    return {k: get_permuted_param(ps, perm, k, params) for k in SPECIAL_KEYS}
+    return {k: get_permuted_param(ps, perm, k, params) for k in params}
 
 
-def update_model_A(ps: PermutationSpec, perm, model_a, new_alpha):
-    for k in SPECIAL_KEYS:
-        model_a[k] = model_a[k]*(1-new_alpha) + new_alpha*get_permuted_param(ps, perm, k, model_a)
+def update_model_a(ps: PermutationSpec, perm, model_a, new_alpha):
+    for k in model_a:
+        model_a[k] = model_a[k] * (1 - new_alpha) + new_alpha * get_permuted_param(
+            ps, perm, k, model_a
+        )
     return model_a
 
 
