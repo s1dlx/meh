@@ -189,9 +189,9 @@ def rebasin_merge(
 
         # # WARNING: is this correct for block merge?
         # # double WARNING: is this correct for anything != weighted_sum?
-        # new_alpha = torch.nn.functional.normalize(
-        #     torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
-        # ).tolist()[0]
+        new_alpha = torch.nn.functional.normalize(
+            torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
+        ).tolist()[0]
         # for key in SPECIAL_KEYS:
         #     thetas["model_a"][key] = (1 - new_alpha) * (
         #         thetas["model_a"][key]
@@ -199,7 +199,8 @@ def rebasin_merge(
 
         # del theta_3
 
-        thetas['model_a'] = update_model_A(perm_spec, perm_2, theta['model_a'], new_alpha)
+        thetas['model_a'] = update_model_A(perm_spec, perm_2, thetas['model_a'], new_alpha)
+        del perm_1, perm_2
 
     return thetas["model_a"]
 
