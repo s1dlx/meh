@@ -15,6 +15,7 @@ from sd_meh.rebasin import (
     sdunet_permutation_spec,
     step_weights_and_bases,
     weight_matching,
+    update_model_A,
 )
 
 MAX_TOKENS = 77
@@ -184,19 +185,21 @@ def rebasin_merge(
             usefp16=precision == 16,
             device=device,
         )
-        theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
+        # theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
 
-        # WARNING: is this correct for block merge?
-        # double WARNING: is this correct for anything != weighted_sum?
-        new_alpha = torch.nn.functional.normalize(
-            torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
-        ).tolist()[0]
-        for key in SPECIAL_KEYS:
-            thetas["model_a"][key] = (1 - new_alpha) * (
-                thetas["model_a"][key]
-            ) + new_alpha * theta_3[key]
+        # # WARNING: is this correct for block merge?
+        # # double WARNING: is this correct for anything != weighted_sum?
+        # new_alpha = torch.nn.functional.normalize(
+        #     torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
+        # ).tolist()[0]
+        # for key in SPECIAL_KEYS:
+        #     thetas["model_a"][key] = (1 - new_alpha) * (
+        #         thetas["model_a"][key]
+        #     ) + new_alpha * theta_3[key]
 
-        del theta_3
+        # del theta_3
+
+        thetas['model_a'] = update_model_A(perm_spec, perm_2, theta['model_a'], new_alpha)
 
     return thetas["model_a"]
 
