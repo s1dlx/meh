@@ -162,12 +162,12 @@ def rebasin_merge(
 
         # normal block merge we already know and love
         if 'model_c' in thetas and device != 'cpu':
-            thetas['model_c'] = {k, v.to(device) for k, v in thetas['model_c'].items()}
+            thetas['model_c'] = {k: v.to(device) for k, v in thetas['model_c'].items()}
         thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
         if 'model_c' in thetas and device != 'cpu':
-            thetas['model_c'] = {k, v.to('cpu') for k, v in thetas['model_c'].items()}
+            thetas['model_c'] = {k: v.to('cpu') for k, v in thetas['model_c'].items()}
 
         # find permutations
         perm_1, y = weight_matching(
@@ -194,7 +194,6 @@ def rebasin_merge(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
         thetas['model_a'] = update_model_A(perm_spec, perm_2, thetas['model_a'], new_alpha)
-        del perm_1, perm_2
 
     return thetas["model_a"]
 
