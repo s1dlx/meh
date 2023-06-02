@@ -2261,16 +2261,17 @@ def weight_matching(
     usefp16=False,
     device="cpu",
 ):
+    special_layers = ["P_bg358", "P_bg324", "P_bg337"]
     perm_sizes = {
         p: params_a[axes[0][0]].shape[axes[0][1]] for p, axes in ps.perm_to_axes.items()
     }
     perm = {}
     perm = (
         {p: torch.arange(n).to(device) for p, n in perm_sizes.items()}
-        if init_perm is None
+        if p in special_layers and init_perm is None
         else init_perm
     )
-    perm_names = list(perm.keys())
+
     linear_sum = 0
     number = 0
 
@@ -2278,24 +2279,22 @@ def weight_matching(
     for _ in range(max_iter):
         progress = False
         shuffle(special_layers)
-        for p_ix in special_layers:
-            p = p_ix
-            if p in special_layers:
-                n = perm_sizes[p]
+        for _ in special_layers:
+            n = perm_sizes[p]
 
-                linear_sum, number, perm, progress = inner_matching(
-                    n,
-                    ps,
-                    p,
-                    params_a,
-                    params_b,
-                    usefp16,
-                    progress,
-                    number,
-                    linear_sum,
-                    perm,
-                    device,
-                )
+            linear_sum, number, perm, progress = inner_matching(
+                n,
+                ps,
+                p,
+                params_a,
+                params_b,
+                usefp16,
+                progress,
+                number,
+                linear_sum,
+                perm,
+                device,
+            )
         if not progress:
             break
 
