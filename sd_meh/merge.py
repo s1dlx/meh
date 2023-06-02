@@ -9,6 +9,13 @@ from tqdm import tqdm
 
 from sd_meh import merge_methods
 from sd_meh.model import SDModel
+from sd_meh.rebasin import (
+    SPECIAL_KEYS,
+    apply_permutation,
+    sdunet_permutation_spec,
+    step_weights_and_bases,
+    weight_matching,
+)
 
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -73,9 +80,41 @@ def merge_models(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
+    re_basin: bool = False,
+    iterations: int = 1,
 ) -> Dict:
     thetas = {k: load_sd_model(m) for k, m in models.items()}
 
+    if re_basin:
+        return rebasin_merge(
+            thetas,
+            weights,
+            bases,
+            merge_mode,
+            precision=precision,
+            weights_clip=weights_clip,
+            iterations=iterations,
+            device="cpu",
+        )
+    else:
+        return simple_merge(
+            thetas,
+            weights,
+            bases,
+            merge_mode,
+            precision=precision,
+            weights_clip=weights_clip,
+        )
+
+
+def simple_merge(
+    thetas: Dict[str, Dict],
+    weights: Dict,
+    bases: Dict,
+    merge_mode: str,
+    precision: int = 16,
+    weights_clip: bool = False,
+) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         if result := merge_key(
             key,
@@ -97,6 +136,65 @@ def merge_models(
                 thetas["model_a"][key] = thetas["model_a"][key].half()
 
     return fix_model(thetas["model_a"])
+
+
+def rebasin_merge(
+    thetas: Dict[str, os.PathLike | str],
+    weights: Dict,
+    bases: Dict,
+    merge_mode: str,
+    precision: int = 16,
+    weights_clip: bool = False,
+    iterations: int = 1,
+    device="cpu",
+):
+    # WARNING: not sure how this does when 3 models are involved...
+
+    model_a = thetas["model_a"].copy()
+    perm_spec = sdunet_permutation_spec()
+
+    print("permuting")
+    for it in range(iterations):
+        print(it)
+        new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
+
+        # normal block merge we already know and love
+        thetas["model_a"] = simple_merge(
+            thetas, new_weights, new_bases, merge_mode, precision, weights_clip
+        )
+
+        # find permutations
+        perm_1, y = weight_matching(
+            perm_spec,
+            model_a,
+            thetas["model_a"],
+            max_iter=it,
+            init_perm=None,
+            usefp16=precision == 16,
+            device=device,
+        )
+        thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
+        perm_2, z = weight_matching(
+            perm_spec,
+            thetas["model_b"],
+            thetas["model_a"],
+            max_iter=it,
+            init_perm=None,
+            usefp16=precision == 16,
+            device=device,
+        )
+        theta_3 = apply_permutation(perm_spec, perm_2, thetas["model_a"])
+
+        # is this correct for block merge?
+        new_alpha = torch.nn.functional.normalize(
+            torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
+        ).tolist()[0]
+        for key in SPECIAL_KEYS:
+            thetas["model_a"][key] = (1 - new_alpha) * (
+                thetas["model_a"][key]
+            ) + new_alpha * theta_3[key]
+
+    return thetas["model_a"]
 
 
 def merge_key(
@@ -144,8 +242,8 @@ def merge_key(
 
         try:
             merge_method = getattr(merge_methods, merge_mode)
-        except AttributeError:
-            raise ValueError(f"{merge_mode} not implemented, aborting merge!")
+        except AttributeError as e:
+            raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
         merge_args = get_merge_method_args(current_bases, thetas, key)
         merged_key = merge_method(**merge_args)
@@ -170,11 +268,7 @@ def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
     }
 
     if "model_c" in thetas:
-        merge_method_args.update(
-            {
-                "c": thetas["model_c"][key],
-            }
-        )
+        merge_method_args["c"] = thetas["model_c"][key]
 
     return merge_method_args
 

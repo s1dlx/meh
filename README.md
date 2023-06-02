@@ -39,11 +39,14 @@ Options:
   -ba, --base_alpha FLOAT
   -wb, --weights_beta TEXT
   -bb, --base_beta FLOAT
+  -rb, --re_basin
+  -rbi, --re_basin_iterations INTEGER
   --help                          Show this message and exit.
 ```
 
 ## Features
 
+- weights matching
 - weights clipping
 - registered pypi package
 - block merge
