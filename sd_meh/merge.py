@@ -71,13 +71,19 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
         model = Path(model)
 
     return SDModel(model, device).load_model()
-    
+
+
 def prune_sd_model(model: Dict) -> Dict:
     keys = list(model.keys())
     for k in keys:
-        if not k.startswith('model.diffusion_model.') and not k.startswith('first_stage_model.') and not k.startswith('cond_stage_model.'):
+        if (
+            not k.startswith("model.diffusion_model.")
+            and not k.startswith("first_stage_model.")
+            and not k.startswith("cond_stage_model.")
+        ):
             del model[k]
     return model
+
 
 def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
     for k in original_model:
@@ -85,9 +91,11 @@ def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
             merged_model[k] = original_model[k]
     return merged_model
 
+
 def log_vram(txt=""):
     alloc = torch.cuda.memory_allocated(0)
     print(f"{txt}: {alloc}")
+
 
 def merge_models(
     models: Dict[str, os.PathLike | str],
@@ -101,9 +109,8 @@ def merge_models(
     device: str = "cpu",
     prune: bool = False,
 ) -> Dict:
-
     if prune:
-        thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
+        thetas = {k: prune_sd_model(load_sd_model(m, "cpu")) for k, m in models.items()}
     else:
         thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
@@ -138,7 +145,7 @@ def merge_models(
 
     if prune:
         del thetas
-        original_a = load_sd_model(models['model_a'], device)
+        original_a = load_sd_model(models["model_a"], device)
         for key in tqdm(original_a.keys(), desc="un-pruned model"):
             if KEY_POSITION_IDS in key:
                 continue
@@ -148,7 +155,6 @@ def merge_models(
                     merged[key] = merged[key].half()
 
     return merged
-
 
 
 def simple_merge(
