@@ -139,7 +139,7 @@ def merge_models(
     if prune:
         del thetas
         original_a = load_sd_model(models['model_a'], device)
-        for key in tqdm(original_a.keys, desc="un-pruned model"):
+        for key in tqdm(original_a.keys(), desc="un-pruned model"):
             if KEY_POSITION_IDS in key:
                 continue
             if "model" in key and key not in merged:
