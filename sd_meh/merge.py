@@ -66,19 +66,12 @@ def fix_model(model: Dict) -> Dict:
     return fix_clip(model)
 
 
-def load_sd_model(model: os.PathLike | str, device: str = "cpu", prune:bool = False) -> Dict:
+def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     if isinstance(model, str):
         model = Path(model)
 
-    print(f'{model} before loading {torch.cuda.memory_allocated(0)*1e-6:5.3f}')
-    sd_model = SDModel(model, device).load_model()
-    print(f'{model} after loading {torch.cuda.memory_allocated(0)*1e-6:5.3f}')
-    if prune:
-        pruned = prune_sd_model(sd_model)
-        print(f'{model} after pruning {torch.cuda.memory_allocated(0)*1e-6:5.3f}')
-        return pruned
-    return sd_model
-
+    return SDModel(model, device).load_model()
+    
 def prune_sd_model(model: Dict) -> Dict:
     return {k: model[k] for k in model if k.startswith('model.diffusion_model.')}
 
@@ -99,10 +92,11 @@ def merge_models(
     iterations: int = 1,
     device: str = "cpu",
 ) -> Dict:
-    thetas = {k: load_sd_model(m, device, device!="cpu") for k, m in models.items()}
+    thetas = {k: load_sd_model(m, device) for k, m in models.items()}
+    thetas = {k: prune_sd_model(m) for k, m in thetas.items()}
 
     if re_basin:
-        merged = rebasin_merge(
+        return rebasin_merge(
             thetas,
             weights,
             bases,
@@ -113,7 +107,7 @@ def merge_models(
             device=device,
         )
     else:
-        merged = simple_merge(
+        return simple_merge(
             thetas,
             weights,
             bases,
@@ -121,11 +115,7 @@ def merge_models(
             precision=precision,
             weights_clip=weights_clip,
         )
-
-    del thetas
-    model_a = load_sd_model(models['model_a'], device)
-    return restore_sd_model(model_a, merged)
-
+        
 
 def simple_merge(
     thetas: Dict[str, Dict],
