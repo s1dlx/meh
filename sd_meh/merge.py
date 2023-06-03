@@ -310,8 +310,8 @@ def merge_key(
         merged_key = merge_method(**merge_args)
 
         if weights_clip:
-            t0 = thetas["model_a"][merged_key]
-            t1 = thetas["model_b"][merged_key]
+            t0 = thetas["model_a"][key]
+            t1 = thetas["model_b"][key]
             threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
             merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
 
