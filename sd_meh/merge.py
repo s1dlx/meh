@@ -179,6 +179,8 @@ def simple_merge(
         ):
             thetas["model_a"][key] = result[1]
 
+    log_vram('after stage 1')
+
     for key in tqdm(thetas["model_b"].keys(), desc="stage 2"):
         if KEY_POSITION_IDS in key:
             continue
@@ -186,6 +188,8 @@ def simple_merge(
             thetas["model_a"].update({key: thetas["model_b"][key]})
             if precision == 16:
                 thetas["model_a"][key] = thetas["model_a"][key].half()
+
+    log_vram('after stage 2')
 
     return fix_model(thetas["model_a"])
 
