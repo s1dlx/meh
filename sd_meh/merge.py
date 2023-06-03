@@ -43,7 +43,7 @@ NAI_KEYS = {
 
 
 def fix_clip(model: Dict) -> Dict:
-    if KEY_POSITION_IDS in model:
+    if KEY_POSITION_IDS in model.keys():
         model[KEY_POSITION_IDS] = torch.tensor(
             [list(range(MAX_TOKENS))], dtype=torch.int64
         )
@@ -62,7 +62,7 @@ def fix_key(model: Dict, key: str) -> Dict:
 
 # https://github.com/j4ded/sdweb-merge-block-weighted-gui/blob/master/scripts/mbw/merge_block_weighted.py#L115
 def fix_model(model: Dict) -> Dict:
-    for k in model:
+    for k in model.keys():
         model = fix_key(model, k)
     return fix_clip(model)
 
@@ -112,7 +112,7 @@ def merge_models(
 ) -> Dict:
     log_vram("before loading models")
     if prune:
-        thetas = {k: prune_sd_model(load_sd_model(m, "cpu")) for k, m in models.items()}
+        thetas = {k: prune_sd_model(load_sd_model(m, device)) for k, m in models.items()}
     else:
         thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
@@ -153,7 +153,7 @@ def merge_models(
             if KEY_POSITION_IDS in key:
                 continue
             if "model" in key and key not in merged:
-                merged.update({key: original_a[key]})
+                merged.update({key: original_a[key]}, inplace=True)
                 if precision == 16:
                     merged[key] = merged[key].half()
 
@@ -169,26 +169,16 @@ def simple_merge(
     weights_clip: bool = False,
 ) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        # Usage
-        result = merge_key(
-            key,
-            thetas,
-            weights,
-            bases,
-            merge_mode,
-            precision,
-            weights_clip,
-        ):
         with merge_key_context(key, thetas, weights, bases, merge_mode, precision, weights_clip) as result:
             if result is not None:
-                thetas["model_a"][key] = result[1]
+                thetas["model_a"].update({key: result}, inplace=True)
 
     log_vram('after stage 1')
 
     for key in tqdm(thetas["model_b"].keys(), desc="stage 2"):
         if KEY_POSITION_IDS in key:
             continue
-        if "model" in key and key not in thetas["model_a"]:
+        if "model" in key and key not in thetas["model_a"].keys():
             thetas["model_a"].update({key: thetas["model_b"][key]})
             if precision == 16:
                 thetas["model_a"][key] = thetas["model_a"][key].half()
@@ -210,7 +200,7 @@ def rebasin_merge(
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
-    model_a = thetas["model_a"].copy()
+    model_a = thetas["model_a"].clone()
     perm_spec = sdunet_permutation_spec()
 
     print("permuting")
@@ -281,7 +271,7 @@ def merge_key(
         return
 
     for theta in thetas.values():
-        if key not in theta:
+        if key not in theta.keys():
             return
 
     if "model" in key:
@@ -320,15 +310,15 @@ def merge_key(
         merged_key = merge_method(**merge_args)
 
         if weights_clip:
-            t0 = thetas["model_a"][key]
-            t1 = thetas["model_b"][key]
+            t0 = thetas["model_a"][merged_key]
+            t1 = thetas["model_b"][merged_key]
             threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
             merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
 
         if precision == 16:
             merged_key = merged_key.half()
 
-        return key, merged_key
+        return merged_key
 
 
 @contextmanager

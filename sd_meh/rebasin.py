@@ -2189,7 +2189,7 @@ def get_permuted_param(ps: PermutationSpec, perm, k: str, params, except_axis=No
 
 def apply_permutation(ps: PermutationSpec, perm, params):
     """Apply a `perm` to `params`."""
-    return {k: get_permuted_param(ps, perm, k, params) for k in params}
+    return {k: get_permuted_param(ps, perm, k, params) for k in params.keys()}
 
 
 def update_model_a(ps: PermutationSpec, perm, model_a, new_alpha):
