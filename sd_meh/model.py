@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-
+from lora import convert_lora_to_weights
 import safetensors
 import torch
 
@@ -35,6 +35,10 @@ def get_state_dict_from_checkpoint(pl_sd):
 
     pl_sd.clear()
     pl_sd.update(sd)
+    for key in pl_sd:
+        if "lora" in key:
+            pl_sd = convert_lora_to_weights(pl_sd)
+            break
     return pl_sd
 
 
