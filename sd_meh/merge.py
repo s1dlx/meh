@@ -15,7 +15,6 @@ from sd_meh.rebasin import (
     step_weights_and_bases,
     update_model_a,
     weight_matching,
-    SPECIAL_KEYS,
 )
 
 MAX_TOKENS = 77
@@ -78,7 +77,7 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
 def prune_sd_model(model: Dict) -> Dict:
     keys = list(model.keys())
     for k in keys:
-        if not k.startswith('model.diffusion_model.') and k not in SPECIAL_KEYS:
+        if not k.startswith('model.diffusion_model.') and not k.startswith('first_stage_model.encoder.'):
             del model[k]
     return model
 
