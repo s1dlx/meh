@@ -72,6 +72,17 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
 
     return SDModel(model, device).load_model()
 
+def prune_sd_model(model: Dict) -> Dict:
+    for k in model:
+        if not k.startswith('model.diffusion_model.'): # not unet
+            del model[k]
+    return model
+
+def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
+    for k in original_model:
+        if k not in merged_model:
+            merged_model[k] = original_model[k]
+    return merged_model
 
 def merge_models(
     models: Dict[str, os.PathLike | str],
@@ -84,10 +95,10 @@ def merge_models(
     iterations: int = 1,
     device: str = "cpu",
 ) -> Dict:
-    thetas = {k: load_sd_model(m, device) for k, m in models.items()}
+    thetas = {k: prune_sd_model(load_sd_model(m, device)) for k, m in models.items()}
 
     if re_basin:
-        return rebasin_merge(
+        merged = rebasin_merge(
             thetas,
             weights,
             bases,
@@ -98,7 +109,7 @@ def merge_models(
             device=device,
         )
     else:
-        return simple_merge(
+        merged = simple_merge(
             thetas,
             weights,
             bases,
@@ -106,6 +117,10 @@ def merge_models(
             precision=precision,
             weights_clip=weights_clip,
         )
+
+    del thetas
+    model_a = load_sd_model(models['model_a'], device)
+    return restore_sd_model(model_a, merged)
 
 
 def simple_merge(
