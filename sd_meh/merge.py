@@ -75,7 +75,7 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
 def prune_sd_model(model: Dict) -> Dict:
     keys = list(model.keys())
     for k in keys:
-        if not k.startswith('model.diffusion_model.') and not k.startswith('first_stage_model.encoder.'):
+        if not k.startswith('model.diffusion_model.') and not k.startswith('first_stage_model.') and not k.startswith('cond_stage_model.'):
             del model[k]
     return model
 
