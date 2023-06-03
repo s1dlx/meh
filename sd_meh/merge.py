@@ -15,6 +15,7 @@ from sd_meh.rebasin import (
     step_weights_and_bases,
     update_model_a,
     weight_matching,
+    SPECIAL_KEYS,
 )
 
 MAX_TOKENS = 77
@@ -77,9 +78,8 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
 def prune_sd_model(model: Dict) -> Dict:
     keys = list(model.keys())
     for k in keys:
-        if not k.startswith('model.diffusion_model.'):
+        if not k.startswith('model.diffusion_model.') and k not in SPECIAL_KEYS:
             del model[k]
-    log_vram('after pruning')
     return model
 
 def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
@@ -103,9 +103,14 @@ def merge_models(
     iterations: int = 1,
     device: str = "cpu",
 ) -> Dict:
-    log_vram('before loading')
-    thetas = {k: prune_sd_model(load_sd_model(m, device)) for k, m in models.items()}
-    log_vram('after loading and pruning') 
+
+    thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
+
+    if device != "cpu":
+        for model_key, model in thetas.items():
+            for key, block in model.items():
+                thetas[model_key][key] = block.to(device)
+
 
     if re_basin:
         return rebasin_merge(
