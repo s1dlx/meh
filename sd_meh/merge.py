@@ -75,9 +75,11 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     return sd_model
     
 def prune_sd_model(model: Dict) -> Dict:
-    pruned = {k: v for k, v in model.items() if k.startswith('model.diffusion_model.')}
+    for k in model:
+        if not k.startswith('model.diffusion_model.'):
+            del model[k]
     log_vram('after pruning')
-    return pruned
+    return model
 
 def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
     for k in original_model:
