@@ -73,10 +73,7 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     return SDModel(model, device).load_model()
 
 def prune_sd_model(model: Dict) -> Dict:
-    for k in model:
-        if not k.startswith('model.diffusion_model.'): # not unet
-            del model[k]
-    return model
+    return {k: model[k] for k in model if k.startswith('model.diffusion_model.')}
 
 def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
     for k in original_model:
