@@ -96,13 +96,6 @@ def log_vram(txt=""):
     alloc = torch.cuda.memory_allocated(0)
     print(f"{txt}: {alloc*1e-9:5.3f}")
 
-def move_to(model: Dict, device: str, precision: int) -> Dict:
-    for key, block in model.items():
-        model[key] = block.to(device)
-        if precision == 16:
-            model[key] = block.half()
-    return model
-
 
 def merge_models(
     models: Dict[str, os.PathLike | str],
@@ -124,8 +117,11 @@ def merge_models(
 
     if device == "cuda":
         for model_key, model in thetas.items():
-            thetas[model_key] = move_to(model, "cuda", precision)
-
+            for key, block in model.items():
+                if precision == 16:
+                    thetas[model_key][key] = block.to(device).half()
+                else:
+                    thetas[model_key][key] = block.to(device)
     log_vram("models loaded")
 
     if re_basin:
@@ -212,18 +208,16 @@ def rebasin_merge(
     print("permuting")
     for it in range(iterations):
         # print(it)
-        log_vram(it)
+        log_vram(f'{it} iteration start')
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
+        log_vram('weights & bases, before simple merge')
 
         # normal block merge we already know and love
-        if 'model_c' in thetas and device=='cuda':
-            thetas['model_c'] = move_to(thetas['model_c'], device, precision)
-
         thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
-        if 'model_c' in thetas:
-            thetas['model_c'] = move_to(thetas['model_c'], 'cpu', precision)
+
+        log_vram('simple merge done')
 
         # find permutations
         perm_1, y = weight_matching(
@@ -235,7 +229,13 @@ def rebasin_merge(
             usefp16=precision == 16,
             device=device,
         )
+
+        log_vram('weight matching #1 done')
+
         thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
+
+        log_vram('apply perm 1 done')
+
         perm_2, z = weight_matching(
             perm_spec,
             thetas["model_b"],
@@ -246,12 +246,16 @@ def rebasin_merge(
             device=device,
         )
 
+        log_vram('weight matching #2 done')
+
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
         ).tolist()[0]
         thetas["model_a"] = update_model_a(
             perm_spec, perm_2, thetas["model_a"], new_alpha
         )
+
+        log_vram('model a updated')
 
     return thetas["model_a"]
 
