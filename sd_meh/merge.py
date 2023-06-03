@@ -81,6 +81,10 @@ def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
             merged_model[k] = original_model[k]
     return merged_model
 
+def log_vram(txt=""):
+    alloc = torch.cuda.memory_allocated(0)
+    print(f"{txt}: {alloc}")
+
 def merge_models(
     models: Dict[str, os.PathLike | str],
     weights: Dict,
@@ -92,8 +96,11 @@ def merge_models(
     iterations: int = 1,
     device: str = "cpu",
 ) -> Dict:
+    log_vram('before loading')
     thetas = {k: load_sd_model(m, device) for k, m in models.items()}
+    log_vram('after loading, before pruning')
     thetas = {k: prune_sd_model(m) for k, m in thetas.items()}
+    log_vram('after pruning') 
 
     if re_basin:
         return rebasin_merge(
@@ -115,7 +122,7 @@ def merge_models(
             precision=precision,
             weights_clip=weights_clip,
         )
-        
+
 
 def simple_merge(
     thetas: Dict[str, Dict],
