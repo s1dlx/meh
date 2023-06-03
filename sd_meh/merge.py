@@ -70,9 +70,7 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     if isinstance(model, str):
         model = Path(model)
 
-    sd_model = SDModel(model, device).load_model()
-    log_vram(f'after loading {model}')
-    return sd_model
+    return SDModel(model, device).load_model()
     
 def prune_sd_model(model: Dict) -> Dict:
     keys = list(model.keys())
@@ -101,18 +99,24 @@ def merge_models(
     re_basin: bool = False,
     iterations: int = 1,
     device: str = "cpu",
+    prune: bool = False,
 ) -> Dict:
 
-    thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
+    if prune:
+        thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
+    else:
+        thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
-    if device != "cpu":
+    if device == "cuda":
         for model_key, model in thetas.items():
             for key, block in model.items():
-                thetas[model_key][key] = block.to(device)
-
+                if precision == 16:
+                    thetas[model_key][key] = block.to(device).half()
+                else:
+                    thetas[model_key][key] = block.to(device)
 
     if re_basin:
-        return rebasin_merge(
+        merged = rebasin_merge(
             thetas,
             weights,
             bases,
@@ -123,7 +127,7 @@ def merge_models(
             device=device,
         )
     else:
-        return simple_merge(
+        merged = simple_merge(
             thetas,
             weights,
             bases,
@@ -131,6 +135,20 @@ def merge_models(
             precision=precision,
             weights_clip=weights_clip,
         )
+
+    if prune:
+        del thetas
+        original_a = load_sd_model(models['model_a'], device)
+        for key in tqdm(original_a.keys, desc="un-pruned model"):
+            if KEY_POSITION_IDS in key:
+                continue
+            if "model" in key and key not in merged:
+                merged.update({key: original_a[key]})
+                if precision == 16:
+                    merged[key] = merged[key].half()
+
+    return merged
+
 
 
 def simple_merge(
