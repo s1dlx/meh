@@ -2,6 +2,7 @@ import os
 import re
 from pathlib import Path
 from typing import Dict, Optional, Tuple
+from contextlib import contextmanager
 
 import safetensors.torch
 import torch
@@ -168,7 +169,8 @@ def simple_merge(
     weights_clip: bool = False,
 ) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        if result := merge_key(
+        # Usage
+        result = merge_key(
             key,
             thetas,
             weights,
@@ -177,7 +179,9 @@ def simple_merge(
             precision,
             weights_clip,
         ):
-            thetas["model_a"][key] = result[1]
+        with merge_key_context(key, thetas, weights, bases, merge_mode, precision, weights_clip) as result:
+            if result is not None:
+                thetas["model_a"][key] = result[1]
 
     log_vram('after stage 1')
 
@@ -325,6 +329,17 @@ def merge_key(
             merged_key = merged_key.half()
 
         return key, merged_key
+
+
+@contextmanager
+def merge_key_context(*args, **kwargs):
+    result = merge_key(*args, **kwargs)
+    try:
+        yield result
+    finally:
+        if result is not None:
+            del result
+
 
 
 def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
