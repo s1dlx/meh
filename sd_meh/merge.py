@@ -75,7 +75,8 @@ def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
     return sd_model
     
 def prune_sd_model(model: Dict) -> Dict:
-    for k in model:
+    keys = list(model.keys())
+    for k in keys:
         if not k.startswith('model.diffusion_model.'):
             del model[k]
     log_vram('after pruning')
