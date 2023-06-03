@@ -94,7 +94,7 @@ def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
 
 def log_vram(txt=""):
     alloc = torch.cuda.memory_allocated(0)
-    print(f"{txt}: {alloc}")
+    print(f"{txt}: {alloc*1e-9:5.3f}")
 
 
 def merge_models(
@@ -109,6 +109,7 @@ def merge_models(
     device: str = "cpu",
     prune: bool = False,
 ) -> Dict:
+    log_vram("before loading models")
     if prune:
         thetas = {k: prune_sd_model(load_sd_model(m, "cpu")) for k, m in models.items()}
     else:
@@ -121,6 +122,8 @@ def merge_models(
                     thetas[model_key][key] = block.to(device).half()
                 else:
                     thetas[model_key][key] = block.to(device)
+    log_vram("models loaded")
+
 
     if re_basin:
         merged = rebasin_merge(
@@ -205,7 +208,8 @@ def rebasin_merge(
 
     print("permuting")
     for it in range(iterations):
-        print(it)
+        # print(it)
+        log_vram(it)
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
 
         # normal block merge we already know and love
