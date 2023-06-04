@@ -387,7 +387,7 @@ def save_model(model, output_file, file_format) -> None:
     print(f"saving {output_file}")
     if file_format == "safetensors":
         safetensors.torch.save_file(
-            model, f"{output_file}.safetensors", metadata={"format": "pt"}
+            model.to_dict(), f"{output_file}.safetensors", metadata={"format": "pt"}
         )
     else:
         torch.save({"state_dict": model}, f"{output_file}.ckpt")
