@@ -178,7 +178,7 @@ def un_prune_model(
             if KEY_POSITION_IDS in key:
                 continue
             if "model" in key and key not in merged:
-                merged.update({key: original_a[key]}, inplace=True)
+                merged.update({key: original_a[key]})
                 if precision == 16:
                     merged.update({key: merged[key].half()})
         del original_a
@@ -189,7 +189,7 @@ def un_prune_model(
             if KEY_POSITION_IDS in key:
                 continue
             if "model" in key and key not in merged:
-                merged.update({key: original_b[key]}, inplace=True)
+                merged.update({key: original_b[key]})
                 if precision == 16:
                     merged.update({key: merged[key].half()})
         del original_b
