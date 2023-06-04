@@ -157,7 +157,7 @@ def merge_models(
             weights_clip=weights_clip,
         )
 
-    return un_prune_model(thetas, models, device, prune, precision)
+    return un_prune_model(merged, thetas, models, device, prune, precision)
 
 
 def un_prune_model(
