@@ -150,7 +150,7 @@ def merge_models(
     if prune:
         del thetas
         original_a = load_sd_model(models["model_a"], device)
-        for key in tqdm(original_a.keys(), desc="un-prune model"):
+        for key in tqdm(original_a.keys(), desc="un-prune model a"):
             if KEY_POSITION_IDS in key:
                 continue
             if "model" in key and key not in merged:
@@ -158,7 +158,16 @@ def merge_models(
                 if precision == 16:
                     merged.update({key: merged[key].half()})
 
-    return merged
+        original_b = load_sd_model(models["model_b"], device)
+        for key in tqdm(original_b.keys(), desc="un-prune model b"):
+            if KEY_POSITION_IDS in key:
+                continue
+            if "model" in key and key not in merged:
+                merged.update({key: original_b[key]}, inplace=True)
+                if precision == 16:
+                    merged.update({key: merged[key].half()})
+
+    return fix_model(merged)
 
 
 def simple_merge(
