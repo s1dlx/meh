@@ -7,6 +7,7 @@ from typing import Dict, Optional, Tuple
 import safetensors.torch
 import torch
 from tqdm import tqdm
+import gc
 
 from sd_meh import merge_methods
 from sd_meh.model import SDModel
@@ -170,6 +171,8 @@ def un_prune_model(
 ) -> Dict:
     if prune:
         del thetas
+        gc.collect()
+        log_vram('remove thetas')
         original_a = load_sd_model(models["model_a"], device)
         for key in tqdm(original_a.keys(), desc="un-prune model a"):
             if KEY_POSITION_IDS in key:
@@ -178,7 +181,9 @@ def un_prune_model(
                 merged.update({key: original_a[key]}, inplace=True)
                 if precision == 16:
                     merged.update({key: merged[key].half()})
-
+        del original_a
+        gc.collect()
+        log_vram('remove original_a')
         original_b = load_sd_model(models["model_b"], device)
         for key in tqdm(original_b.keys(), desc="un-prune model b"):
             if KEY_POSITION_IDS in key:
@@ -187,6 +192,7 @@ def un_prune_model(
                 merged.update({key: original_b[key]}, inplace=True)
                 if precision == 16:
                     merged.update({key: merged[key].half()})
+        del original_b
 
     return fix_model(merged)
 
