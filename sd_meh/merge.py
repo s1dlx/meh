@@ -80,7 +80,7 @@ def prune_sd_model(model: Dict) -> Dict:
         if (
             not k.startswith("model.diffusion_model.")
             # and not k.startswith("first_stage_model.")
-            # and not k.startswith("cond_stage_model.")
+            and not k.startswith("cond_stage_model.")
         ):
             del model[k]
     return model
