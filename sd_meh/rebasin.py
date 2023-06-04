@@ -1544,630 +1544,630 @@ def sdunet_permutation_spec() -> PermutationSpec:
             **conv("model.diffusion_model.out.2", "P_bg325", "P_bg326"),
             # Text Encoder
             # encoder down
-            **conv("first_stage_model.encoder.conv_in", "P_bg327", "P_bg328"),
-            **easyblock2("first_stage_model.encoder.down.0.block.0", "P_bg328"),
-            **easyblock2("first_stage_model.encoder.down.0.block.1", "P_bg328"),
-            **conv(
-                "first_stage_model.encoder.down.0.downsample.conv", "P_bg328", "P_bg329"
-            ),
-            **shortcutblock(
-                "first_stage_model.encoder.down.1.block.0", "P_bg330", "P_bg331"
-            ),
-            **easyblock2("first_stage_model.encoder.down.1.block.1", "P_bg331"),
-            **conv(
-                "first_stage_model.encoder.down.1.downsample.conv", "P_bg331", "P_bg332"
-            ),
-            **shortcutblock(
-                "first_stage_model.encoder.down.2.block.0", "P_bg332", "P_bg333"
-            ),
-            **easyblock2("first_stage_model.encoder.down.2.block.1", "P_bg333"),
-            **conv(
-                "first_stage_model.encoder.down.2.downsample.conv", "P_bg333", "P_bg334"
-            ),
-            **easyblock2("first_stage_model.encoder.down.3.block.0", "P_bg334"),
-            **easyblock2("first_stage_model.encoder.down.3.block.1", "P_bg334"),
-            # encoder mid-block
-            **easyblock2("first_stage_model.encoder.mid.block_1", "P_bg334"),
-            **norm("first_stage_model.encoder.mid.attn_1.norm", "P_bg334"),
-            **conv("first_stage_model.encoder.mid.attn_1.q", "P_bg334", "P_bg335"),
-            **conv("first_stage_model.encoder.mid.attn_1.k", "P_bg334", "P_bg335"),
-            **conv("first_stage_model.encoder.mid.attn_1.v", "P_bg334", "P_bg335"),
-            **conv(
-                "first_stage_model.encoder.mid.attn_1.proj_out", "P_bg335", "P_bg336"
-            ),
-            **easyblock2("first_stage_model.encoder.mid.block_2", "P_bg336"),
-            **norm("first_stage_model.encoder.norm_out", "P_bg337"),
-            **conv("first_stage_model.encoder.conv_out", "P_bg338", "P_bg339"),
-            **conv("first_stage_model.decoder.conv_in", "P_bg340", "P_bg341"),
-            # decoder mid-block
-            **easyblock2("first_stage_model.decoder.mid.block_1", "P_bg342"),
-            **norm("first_stage_model.decoder.mid.attn_1.norm", "P_bg342"),
-            **conv("first_stage_model.decoder.mid.attn_1.q", "P_bg342", "P_bg343"),
-            **conv("first_stage_model.decoder.mid.attn_1.k", "P_bg342", "P_bg343"),
-            **conv("first_stage_model.decoder.mid.attn_1.v", "P_bg342", "P_bg343"),
-            **conv(
-                "first_stage_model.decoder.mid.attn_1.proj_out", "P_bg343", "P_bg344"
-            ),
-            **easyblock2("first_stage_model.decoder.mid.block_2", "P_bg345"),
-            # decoder up
-            **shortcutblock(
-                "first_stage_model.decoder.up.0.block.0", "P_bg346", "P_bg347"
-            ),
-            **easyblock2("first_stage_model.decoder.up.0.block.1", "P_bg348"),
-            **easyblock2("first_stage_model.decoder.up.0.block.2", "P_bg349"),
-            **shortcutblock(
-                "first_stage_model.decoder.up.1.block.0", "P_bg350", "P_bg351"
-            ),
-            **easyblock2("first_stage_model.decoder.up.1.block.1", "P_bg352"),
-            **easyblock2("first_stage_model.decoder.up.1.block.2", "P_bg353"),
-            **conv(
-                "first_stage_model.decoder.up.1.upsample.conv", "P_bg353", "P_bg354"
-            ),
-            **easyblock2("first_stage_model.decoder.up.2.block.0", "P_bg355"),
-            **easyblock2("first_stage_model.decoder.up.2.block.1", "P_bg355"),
-            **easyblock2("first_stage_model.decoder.up.2.block.2", "P_bg355"),
-            **conv(
-                "first_stage_model.decoder.up.2.upsample.conv", "P_bg355", "P_bg356"
-            ),
-            **easyblock2("first_stage_model.decoder.up.3.block.0", "P_bg356"),
-            **easyblock2("first_stage_model.decoder.up.3.block.1", "P_bg356"),
-            **easyblock2("first_stage_model.decoder.up.3.block.2", "P_bg356"),
-            **conv(
-                "first_stage_model.decoder.up.3.upsample.conv", "P_bg356", "P_bg357"
-            ),
-            **norm("first_stage_model.decoder.norm_out", "P_bg358"),
-            **conv("first_stage_model.decoder.conv_out", "P_bg359", "P_bg360"),
-            **conv("first_stage_model.quant_conv", "P_bg361", "P_bg362"),
-            **conv("first_stage_model.post_quant_conv", "P_bg363", "P_bg364"),
-            **skip(
-                "cond_stage_model.transformer.text_model.embeddings.position_ids",
-                None,
-                None,
-            ),
-            #  **dense("cond_stage_model.transformer.text_model.embeddings.token_embedding","P_bg365", "P_bg366",bias=False),
-            **dense(
-                "cond_stage_model.transformer.text_model.embeddings.token_embedding",
-                None,
-                None,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.embeddings.position_embedding",
-                "P_bg367",
-                "P_bg368",
-                bias=False,
-            ),
-            # cond stage text encoder
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.k_proj",
-                "P_bg369",
-                "P_bg370",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.v_proj",
-                "P_bg369",
-                "P_bg370",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.q_proj",
-                "P_bg369",
-                "P_bg370",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.out_proj",
-                "P_bg369",
-                "P_bg370",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.layer_norm1",
-                "P_bg370",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.mlp.fc1",
-                "P_bg370",
-                "P_bg371",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.mlp.fc2",
-                "P_bg371",
-                "P_bg372",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.0.layer_norm2",
-                "P_bg372",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.k_proj",
-                "P_bg372",
-                "P_bg373",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.v_proj",
-                "P_bg372",
-                "P_bg373",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.q_proj",
-                "P_bg372",
-                "P_bg373",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.out_proj",
-                "P_bg372",
-                "P_bg373",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.layer_norm1",
-                "P_bg373",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.mlp.fc1",
-                "P_bg373",
-                "P_bg374",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.mlp.fc2",
-                "P_bg374",
-                "P_bg375",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.1.layer_norm2",
-                "P_bg375",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.k_proj",
-                "P_bg375",
-                "P_bg376",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.v_proj",
-                "P_bg375",
-                "P_bg376",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.q_proj",
-                "P_bg375",
-                "P_bg376",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.out_proj",
-                "P_bg375",
-                "P_bg376",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.layer_norm1",
-                "P_bg376",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.mlp.fc1",
-                "P_bg376",
-                "P_bg377",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.mlp.fc2",
-                "P_bg377",
-                "P_bg378",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.2.layer_norm2",
-                "P_bg378",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.k_proj",
-                "P_bg378",
-                "P_bg379",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.v_proj",
-                "P_bg378",
-                "P_bg379",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.q_proj",
-                "P_bg378",
-                "P_bg379",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.out_proj",
-                "P_bg378",
-                "P_bg379",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.layer_norm1",
-                "P_bg379",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.mlp.fc1",
-                "P_bg379",
-                "P_bg380",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.mlp.fc2",
-                "P_bg380",
-                "P_b381",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.3.layer_norm2",
-                "P_bg381",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.k_proj",
-                "P_bg381",
-                "P_bg382",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.v_proj",
-                "P_bg381",
-                "P_bg382",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.q_proj",
-                "P_bg381",
-                "P_bg382",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.out_proj",
-                "P_bg381",
-                "P_bg382",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.layer_norm1",
-                "P_bg382",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.mlp.fc1",
-                "P_bg382",
-                "P_bg383",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.mlp.fc2",
-                "P_bg383",
-                "P_bg384",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.4.layer_norm2",
-                "P_bg384",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.k_proj",
-                "P_bg384",
-                "P_bg385",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.v_proj",
-                "P_bg384",
-                "P_bg385",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.q_proj",
-                "P_bg384",
-                "P_bg385",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.out_proj",
-                "P_bg384",
-                "P_bg385",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.layer_norm1",
-                "P_bg385",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.mlp.fc1",
-                "P_bg385",
-                "P_bg386",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.mlp.fc2",
-                "P_bg386",
-                "P_bg387",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.5.layer_norm2",
-                "P_bg387",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.k_proj",
-                "P_bg387",
-                "P_bg388",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.v_proj",
-                "P_bg387",
-                "P_bg388",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.q_proj",
-                "P_bg387",
-                "P_bg388",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.out_proj",
-                "P_bg387",
-                "P_bg388",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.layer_norm1",
-                "P_bg389",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.mlp.fc1",
-                "P_bg389",
-                "P_bg390",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.mlp.fc2",
-                "P_bg390",
-                "P_bg391",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.6.layer_norm2",
-                "P_bg391",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.k_proj",
-                "P_bg391",
-                "P_bg392",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.v_proj",
-                "P_bg391",
-                "P_bg392",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.q_proj",
-                "P_bg391",
-                "P_bg392",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.out_proj",
-                "P_bg391",
-                "P_bg392",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.layer_norm1",
-                "P_bg392",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.mlp.fc1",
-                "P_bg392",
-                "P_bg393",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.mlp.fc2",
-                "P_bg393",
-                "P_bg394",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.7.layer_norm2",
-                "P_bg394",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.k_proj",
-                "P_bg394",
-                "P_bg395",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.v_proj",
-                "P_bg394",
-                "P_bg395",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.q_proj",
-                "P_bg394",
-                "P_bg395",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.out_proj",
-                "P_bg394",
-                "P_bg395",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.layer_norm1",
-                "P_bg395",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.mlp.fc1",
-                "P_bg395",
-                "P_bg396",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.mlp.fc2",
-                "P_bg396",
-                "P_bg397",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.8.layer_norm2",
-                "P_bg397",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.k_proj",
-                "P_bg397",
-                "P_bg398",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.v_proj",
-                "P_bg397",
-                "P_bg398",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.q_proj",
-                "P_bg397",
-                "P_bg398",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.out_proj",
-                "P_bg397",
-                "P_bg398",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.layer_norm1",
-                "P_bg398",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.mlp.fc1",
-                "P_bg398",
-                "P_bg399",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.mlp.fc2",
-                "P_bg400",
-                "P_bg401",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.9.layer_norm2",
-                "P_bg401",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.k_proj",
-                "P_bg401",
-                "P_bg402",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.v_proj",
-                "P_bg401",
-                "P_bg402",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.q_proj",
-                "P_bg401",
-                "P_bg402",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.out_proj",
-                "P_bg401",
-                "P_bg402",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.layer_norm1",
-                "P_bg402",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.mlp.fc1",
-                "P_bg402",
-                "P_bg403",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.mlp.fc2",
-                "P_bg403",
-                "P_bg404",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.10.layer_norm2",
-                "P_bg404",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.k_proj",
-                "P_bg404",
-                "P_bg405",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.v_proj",
-                "P_bg404",
-                "P_bg405",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.q_proj",
-                "P_bg404",
-                "P_bg405",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.out_proj",
-                "P_bg404",
-                "P_bg405",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.layer_norm1",
-                "P_bg405",
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.mlp.fc1",
-                "P_bg405",
-                "P_bg406",
-                bias=True,
-            ),
-            **dense(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.mlp.fc2",
-                "P_bg406",
-                "P_bg407",
-                bias=True,
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.encoder.layers.11.layer_norm2",
-                "P_bg407",
-            ),
-            **norm(
-                "cond_stage_model.transformer.text_model.final_layer_norm", "P_bg407"
-            ),
+            # **conv("first_stage_model.encoder.conv_in", "P_bg327", "P_bg328"),
+            # **easyblock2("first_stage_model.encoder.down.0.block.0", "P_bg328"),
+            # **easyblock2("first_stage_model.encoder.down.0.block.1", "P_bg328"),
+            # **conv(
+            #     "first_stage_model.encoder.down.0.downsample.conv", "P_bg328", "P_bg329"
+            # ),
+            # **shortcutblock(
+            #     "first_stage_model.encoder.down.1.block.0", "P_bg330", "P_bg331"
+            # ),
+            # **easyblock2("first_stage_model.encoder.down.1.block.1", "P_bg331"),
+            # **conv(
+            #     "first_stage_model.encoder.down.1.downsample.conv", "P_bg331", "P_bg332"
+            # ),
+            # **shortcutblock(
+            #     "first_stage_model.encoder.down.2.block.0", "P_bg332", "P_bg333"
+            # ),
+            # **easyblock2("first_stage_model.encoder.down.2.block.1", "P_bg333"),
+            # **conv(
+            #     "first_stage_model.encoder.down.2.downsample.conv", "P_bg333", "P_bg334"
+            # ),
+            # **easyblock2("first_stage_model.encoder.down.3.block.0", "P_bg334"),
+            # **easyblock2("first_stage_model.encoder.down.3.block.1", "P_bg334"),
+            # # encoder mid-block
+            # **easyblock2("first_stage_model.encoder.mid.block_1", "P_bg334"),
+            # **norm("first_stage_model.encoder.mid.attn_1.norm", "P_bg334"),
+            # **conv("first_stage_model.encoder.mid.attn_1.q", "P_bg334", "P_bg335"),
+            # **conv("first_stage_model.encoder.mid.attn_1.k", "P_bg334", "P_bg335"),
+            # **conv("first_stage_model.encoder.mid.attn_1.v", "P_bg334", "P_bg335"),
+            # **conv(
+            #     "first_stage_model.encoder.mid.attn_1.proj_out", "P_bg335", "P_bg336"
+            # ),
+            # **easyblock2("first_stage_model.encoder.mid.block_2", "P_bg336"),
+            # **norm("first_stage_model.encoder.norm_out", "P_bg337"),
+            # **conv("first_stage_model.encoder.conv_out", "P_bg338", "P_bg339"),
+            # **conv("first_stage_model.decoder.conv_in", "P_bg340", "P_bg341"),
+            # # decoder mid-block
+            # **easyblock2("first_stage_model.decoder.mid.block_1", "P_bg342"),
+            # **norm("first_stage_model.decoder.mid.attn_1.norm", "P_bg342"),
+            # **conv("first_stage_model.decoder.mid.attn_1.q", "P_bg342", "P_bg343"),
+            # **conv("first_stage_model.decoder.mid.attn_1.k", "P_bg342", "P_bg343"),
+            # **conv("first_stage_model.decoder.mid.attn_1.v", "P_bg342", "P_bg343"),
+            # **conv(
+            #     "first_stage_model.decoder.mid.attn_1.proj_out", "P_bg343", "P_bg344"
+            # ),
+            # **easyblock2("first_stage_model.decoder.mid.block_2", "P_bg345"),
+            # # decoder up
+            # **shortcutblock(
+            #     "first_stage_model.decoder.up.0.block.0", "P_bg346", "P_bg347"
+            # ),
+            # **easyblock2("first_stage_model.decoder.up.0.block.1", "P_bg348"),
+            # **easyblock2("first_stage_model.decoder.up.0.block.2", "P_bg349"),
+            # **shortcutblock(
+            #     "first_stage_model.decoder.up.1.block.0", "P_bg350", "P_bg351"
+            # ),
+            # **easyblock2("first_stage_model.decoder.up.1.block.1", "P_bg352"),
+            # **easyblock2("first_stage_model.decoder.up.1.block.2", "P_bg353"),
+            # **conv(
+            #     "first_stage_model.decoder.up.1.upsample.conv", "P_bg353", "P_bg354"
+            # ),
+            # **easyblock2("first_stage_model.decoder.up.2.block.0", "P_bg355"),
+            # **easyblock2("first_stage_model.decoder.up.2.block.1", "P_bg355"),
+            # **easyblock2("first_stage_model.decoder.up.2.block.2", "P_bg355"),
+            # **conv(
+            #     "first_stage_model.decoder.up.2.upsample.conv", "P_bg355", "P_bg356"
+            # ),
+            # **easyblock2("first_stage_model.decoder.up.3.block.0", "P_bg356"),
+            # **easyblock2("first_stage_model.decoder.up.3.block.1", "P_bg356"),
+            # **easyblock2("first_stage_model.decoder.up.3.block.2", "P_bg356"),
+            # **conv(
+            #     "first_stage_model.decoder.up.3.upsample.conv", "P_bg356", "P_bg357"
+            # ),
+            # **norm("first_stage_model.decoder.norm_out", "P_bg358"),
+            # **conv("first_stage_model.decoder.conv_out", "P_bg359", "P_bg360"),
+            # **conv("first_stage_model.quant_conv", "P_bg361", "P_bg362"),
+            # **conv("first_stage_model.post_quant_conv", "P_bg363", "P_bg364"),
+            # **skip(
+            #     "cond_stage_model.transformer.text_model.embeddings.position_ids",
+            #     None,
+            #     None,
+            # ),
+            # #  **dense("cond_stage_model.transformer.text_model.embeddings.token_embedding","P_bg365", "P_bg366",bias=False),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.embeddings.token_embedding",
+            #     None,
+            #     None,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.embeddings.position_embedding",
+            #     "P_bg367",
+            #     "P_bg368",
+            #     bias=False,
+            # ),
+            # # cond stage text encoder
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.k_proj",
+            #     "P_bg369",
+            #     "P_bg370",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.v_proj",
+            #     "P_bg369",
+            #     "P_bg370",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.q_proj",
+            #     "P_bg369",
+            #     "P_bg370",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.self_attn.out_proj",
+            #     "P_bg369",
+            #     "P_bg370",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.layer_norm1",
+            #     "P_bg370",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.mlp.fc1",
+            #     "P_bg370",
+            #     "P_bg371",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.mlp.fc2",
+            #     "P_bg371",
+            #     "P_bg372",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.0.layer_norm2",
+            #     "P_bg372",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.k_proj",
+            #     "P_bg372",
+            #     "P_bg373",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.v_proj",
+            #     "P_bg372",
+            #     "P_bg373",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.q_proj",
+            #     "P_bg372",
+            #     "P_bg373",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.self_attn.out_proj",
+            #     "P_bg372",
+            #     "P_bg373",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.layer_norm1",
+            #     "P_bg373",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.mlp.fc1",
+            #     "P_bg373",
+            #     "P_bg374",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.mlp.fc2",
+            #     "P_bg374",
+            #     "P_bg375",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.1.layer_norm2",
+            #     "P_bg375",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.k_proj",
+            #     "P_bg375",
+            #     "P_bg376",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.v_proj",
+            #     "P_bg375",
+            #     "P_bg376",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.q_proj",
+            #     "P_bg375",
+            #     "P_bg376",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.self_attn.out_proj",
+            #     "P_bg375",
+            #     "P_bg376",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.layer_norm1",
+            #     "P_bg376",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.mlp.fc1",
+            #     "P_bg376",
+            #     "P_bg377",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.mlp.fc2",
+            #     "P_bg377",
+            #     "P_bg378",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.2.layer_norm2",
+            #     "P_bg378",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.k_proj",
+            #     "P_bg378",
+            #     "P_bg379",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.v_proj",
+            #     "P_bg378",
+            #     "P_bg379",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.q_proj",
+            #     "P_bg378",
+            #     "P_bg379",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.self_attn.out_proj",
+            #     "P_bg378",
+            #     "P_bg379",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.layer_norm1",
+            #     "P_bg379",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.mlp.fc1",
+            #     "P_bg379",
+            #     "P_bg380",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.mlp.fc2",
+            #     "P_bg380",
+            #     "P_b381",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.3.layer_norm2",
+            #     "P_bg381",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.k_proj",
+            #     "P_bg381",
+            #     "P_bg382",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.v_proj",
+            #     "P_bg381",
+            #     "P_bg382",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.q_proj",
+            #     "P_bg381",
+            #     "P_bg382",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.self_attn.out_proj",
+            #     "P_bg381",
+            #     "P_bg382",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.layer_norm1",
+            #     "P_bg382",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.mlp.fc1",
+            #     "P_bg382",
+            #     "P_bg383",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.mlp.fc2",
+            #     "P_bg383",
+            #     "P_bg384",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.4.layer_norm2",
+            #     "P_bg384",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.k_proj",
+            #     "P_bg384",
+            #     "P_bg385",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.v_proj",
+            #     "P_bg384",
+            #     "P_bg385",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.q_proj",
+            #     "P_bg384",
+            #     "P_bg385",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.self_attn.out_proj",
+            #     "P_bg384",
+            #     "P_bg385",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.layer_norm1",
+            #     "P_bg385",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.mlp.fc1",
+            #     "P_bg385",
+            #     "P_bg386",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.mlp.fc2",
+            #     "P_bg386",
+            #     "P_bg387",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.5.layer_norm2",
+            #     "P_bg387",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.k_proj",
+            #     "P_bg387",
+            #     "P_bg388",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.v_proj",
+            #     "P_bg387",
+            #     "P_bg388",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.q_proj",
+            #     "P_bg387",
+            #     "P_bg388",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.self_attn.out_proj",
+            #     "P_bg387",
+            #     "P_bg388",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.layer_norm1",
+            #     "P_bg389",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.mlp.fc1",
+            #     "P_bg389",
+            #     "P_bg390",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.mlp.fc2",
+            #     "P_bg390",
+            #     "P_bg391",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.6.layer_norm2",
+            #     "P_bg391",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.k_proj",
+            #     "P_bg391",
+            #     "P_bg392",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.v_proj",
+            #     "P_bg391",
+            #     "P_bg392",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.q_proj",
+            #     "P_bg391",
+            #     "P_bg392",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.self_attn.out_proj",
+            #     "P_bg391",
+            #     "P_bg392",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.layer_norm1",
+            #     "P_bg392",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.mlp.fc1",
+            #     "P_bg392",
+            #     "P_bg393",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.mlp.fc2",
+            #     "P_bg393",
+            #     "P_bg394",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.7.layer_norm2",
+            #     "P_bg394",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.k_proj",
+            #     "P_bg394",
+            #     "P_bg395",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.v_proj",
+            #     "P_bg394",
+            #     "P_bg395",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.q_proj",
+            #     "P_bg394",
+            #     "P_bg395",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.self_attn.out_proj",
+            #     "P_bg394",
+            #     "P_bg395",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.layer_norm1",
+            #     "P_bg395",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.mlp.fc1",
+            #     "P_bg395",
+            #     "P_bg396",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.mlp.fc2",
+            #     "P_bg396",
+            #     "P_bg397",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.8.layer_norm2",
+            #     "P_bg397",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.k_proj",
+            #     "P_bg397",
+            #     "P_bg398",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.v_proj",
+            #     "P_bg397",
+            #     "P_bg398",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.q_proj",
+            #     "P_bg397",
+            #     "P_bg398",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.self_attn.out_proj",
+            #     "P_bg397",
+            #     "P_bg398",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.layer_norm1",
+            #     "P_bg398",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.mlp.fc1",
+            #     "P_bg398",
+            #     "P_bg399",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.mlp.fc2",
+            #     "P_bg400",
+            #     "P_bg401",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.9.layer_norm2",
+            #     "P_bg401",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.k_proj",
+            #     "P_bg401",
+            #     "P_bg402",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.v_proj",
+            #     "P_bg401",
+            #     "P_bg402",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.q_proj",
+            #     "P_bg401",
+            #     "P_bg402",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.self_attn.out_proj",
+            #     "P_bg401",
+            #     "P_bg402",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.layer_norm1",
+            #     "P_bg402",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.mlp.fc1",
+            #     "P_bg402",
+            #     "P_bg403",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.mlp.fc2",
+            #     "P_bg403",
+            #     "P_bg404",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.10.layer_norm2",
+            #     "P_bg404",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.k_proj",
+            #     "P_bg404",
+            #     "P_bg405",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.v_proj",
+            #     "P_bg404",
+            #     "P_bg405",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.q_proj",
+            #     "P_bg404",
+            #     "P_bg405",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.self_attn.out_proj",
+            #     "P_bg404",
+            #     "P_bg405",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.layer_norm1",
+            #     "P_bg405",
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.mlp.fc1",
+            #     "P_bg405",
+            #     "P_bg406",
+            #     bias=True,
+            # ),
+            # **dense(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.mlp.fc2",
+            #     "P_bg406",
+            #     "P_bg407",
+            #     bias=True,
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.encoder.layers.11.layer_norm2",
+            #     "P_bg407",
+            # ),
+            # **norm(
+            #     "cond_stage_model.transformer.text_model.final_layer_norm", "P_bg407"
+            # ),
         }
     )
 
