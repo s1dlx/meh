@@ -120,9 +120,10 @@ def merge_models(
         for model_key, model in thetas.items():
             for key, block in model.items():
                 if precision == 16:
-                    thetas[model_key][key] = block.to(device).half()
+                    thetas[model_key].update({key: block.to(device).half()})
                 else:
-                    thetas[model_key][key] = block.to(device)
+                    thetas[model_key].update({key: block.to(device)})
+
     log_vram("models loaded")
 
     if re_basin:
@@ -155,7 +156,7 @@ def merge_models(
             if "model" in key and key not in merged:
                 merged.update({key: original_a[key]}, inplace=True)
                 if precision == 16:
-                    merged[key] = merged[key].half()
+                    merged.update({key: merged[key].half()})
 
     return merged
 
@@ -181,7 +182,7 @@ def simple_merge(
         if "model" in key and key not in thetas["model_a"].keys():
             thetas["model_a"].update({key: thetas["model_b"][key]})
             if precision == 16:
-                thetas["model_a"][key] = thetas["model_a"][key].half()
+                thetas["model_a"].update({key: thetas["model_a"][key].half()})
 
     log_vram('after stage 2')
 
