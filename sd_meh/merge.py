@@ -1,3 +1,4 @@
+import gc
 import os
 import re
 from contextlib import contextmanager
@@ -7,7 +8,6 @@ from typing import Dict, Optional, Tuple
 import safetensors.torch
 import torch
 from tqdm import tqdm
-import gc
 
 from sd_meh import merge_methods
 from sd_meh.model import SDModel
@@ -172,23 +172,23 @@ def un_prune_model(
     if prune:
         del thetas
         gc.collect()
-        log_vram('remove thetas')
+        log_vram("remove thetas")
         original_a = load_sd_model(models["model_a"], device)
         for key in tqdm(original_a.keys(), desc="un-prune model a"):
             if KEY_POSITION_IDS in key:
                 continue
-            if "model" in key and key not in merged:
+            if "model" in key and key not in merged.keys():
                 merged.update({key: original_a[key]})
                 if precision == 16:
                     merged.update({key: merged[key].half()})
         del original_a
         gc.collect()
-        log_vram('remove original_a')
+        log_vram("remove original_a")
         original_b = load_sd_model(models["model_b"], device)
         for key in tqdm(original_b.keys(), desc="un-prune model b"):
             if KEY_POSITION_IDS in key:
                 continue
-            if "model" in key and key not in merged:
+            if "model" in key and key not in merged.keys():
                 merged.update({key: original_b[key]})
                 if precision == 16:
                     merged.update({key: merged[key].half()})
