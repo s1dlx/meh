@@ -1,8 +1,8 @@
 import os
 import re
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Optional, Tuple
-from contextlib import contextmanager
 
 import safetensors.torch
 import torch
@@ -98,21 +98,15 @@ def log_vram(txt=""):
     print(f"{txt}: {alloc*1e-9:5.3f}")
 
 
-def merge_models(
+def load_thetas(
     models: Dict[str, os.PathLike | str],
-    weights: Dict,
-    bases: Dict,
-    merge_mode: str,
-    precision: int = 16,
-    weights_clip: bool = False,
-    re_basin: bool = False,
-    iterations: int = 1,
-    device: str = "cpu",
-    prune: bool = False,
+    prune: bool,
+    device: str,
+    precision: int,
 ) -> Dict:
     log_vram("before loading models")
     if prune:
-        thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
+        thetas = {k: prune_sd_model(load_sd_model(m, "cpu")) for k, m in models.items()}
     else:
         thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
@@ -125,6 +119,22 @@ def merge_models(
                     thetas[model_key].update({key: block.to(device)})
 
     log_vram("models loaded")
+    return thetas
+
+
+def merge_models(
+    models: Dict[str, os.PathLike | str],
+    weights: Dict,
+    bases: Dict,
+    merge_mode: str,
+    precision: int = 16,
+    weights_clip: bool = False,
+    re_basin: bool = False,
+    iterations: int = 1,
+    device: str = "cpu",
+    prune: bool = False,
+) -> Dict:
+    thetas = load_thetas(models, prune, device, precision)
 
     if re_basin:
         merged = rebasin_merge(
@@ -147,6 +157,17 @@ def merge_models(
             weights_clip=weights_clip,
         )
 
+    return un_prune_model(thetas, models, device, prune, precision)
+
+
+def un_prune_model(
+    merged: Dict,
+    thetas: Dict,
+    models: Dict,
+    device: str,
+    prune: bool,
+    precision: int,
+) -> Dict:
     if prune:
         del thetas
         original_a = load_sd_model(models["model_a"], device)
@@ -179,11 +200,13 @@ def simple_merge(
     weights_clip: bool = False,
 ) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        with merge_key_context(key, thetas, weights, bases, merge_mode, precision, weights_clip) as result:
+        with merge_key_context(
+            key, thetas, weights, bases, merge_mode, precision, weights_clip
+        ) as result:
             if result is not None:
                 thetas["model_a"].update({key: result.detach().clone()})
 
-    log_vram('after stage 1')
+    log_vram("after stage 1")
 
     for key in tqdm(thetas["model_b"].keys(), desc="stage 2"):
         if KEY_POSITION_IDS in key:
@@ -193,7 +216,7 @@ def simple_merge(
             if precision == 16:
                 thetas["model_a"].update({key: thetas["model_a"][key].half()})
 
-    log_vram('after stage 2')
+    log_vram("after stage 2")
 
     return fix_model(thetas["model_a"])
 
@@ -216,16 +239,16 @@ def rebasin_merge(
     print("permuting")
     for it in range(iterations):
         # print(it)
-        log_vram(f'{it} iteration start')
+        log_vram(f"{it} iteration start")
         new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
-        log_vram('weights & bases, before simple merge')
+        log_vram("weights & bases, before simple merge")
 
         # normal block merge we already know and love
         thetas["model_a"] = simple_merge(
             thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
 
-        log_vram('simple merge done')
+        log_vram("simple merge done")
 
         # find permutations
         perm_1, y = weight_matching(
@@ -238,11 +261,11 @@ def rebasin_merge(
             device=device,
         )
 
-        log_vram('weight matching #1 done')
+        log_vram("weight matching #1 done")
 
         thetas["model_a"] = apply_permutation(perm_spec, perm_1, thetas["model_a"])
 
-        log_vram('apply perm 1 done')
+        log_vram("apply perm 1 done")
 
         perm_2, z = weight_matching(
             perm_spec,
@@ -254,7 +277,7 @@ def rebasin_merge(
             device=device,
         )
 
-        log_vram('weight matching #2 done')
+        log_vram("weight matching #2 done")
 
         new_alpha = torch.nn.functional.normalize(
             torch.sigmoid(torch.Tensor([y, z])), p=1, dim=0
@@ -263,7 +286,7 @@ def rebasin_merge(
             perm_spec, perm_2, thetas["model_a"], new_alpha
         )
 
-        log_vram('model a updated')
+        log_vram("model a updated")
 
     return thetas["model_a"]
 
@@ -341,7 +364,6 @@ def merge_key_context(*args, **kwargs):
             del result
 
 
-
 def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
     merge_method_args = {
         "a": thetas["model_a"][key],
@@ -356,6 +378,7 @@ def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
 
 
 def save_model(model, output_file, file_format) -> None:
+    print(f"saving {output_file}")
     if file_format == "safetensors":
         safetensors.torch.save_file(
             model, f"{output_file}.safetensors", metadata={"format": "pt"}
