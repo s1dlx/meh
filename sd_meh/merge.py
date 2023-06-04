@@ -112,7 +112,7 @@ def merge_models(
 ) -> Dict:
     log_vram("before loading models")
     if prune:
-        thetas = {k: prune_sd_model(load_sd_model(m, device)) for k, m in models.items()}
+        thetas = {k: prune_sd_model(load_sd_model(m, 'cpu')) for k, m in models.items()}
     else:
         thetas = {k: load_sd_model(m, device) for k, m in models.items()}
 
@@ -172,7 +172,7 @@ def simple_merge(
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         with merge_key_context(key, thetas, weights, bases, merge_mode, precision, weights_clip) as result:
             if result is not None:
-                thetas["model_a"].update({key: result}, inplace=True)
+                thetas["model_a"].update({key: result.detach().clone()})
 
     log_vram('after stage 1')
 
