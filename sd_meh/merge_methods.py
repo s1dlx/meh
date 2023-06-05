@@ -100,14 +100,14 @@ def ties_add_difference(
 
     res = c
     for sign, delta in zip(signs, deltas):
-        delta_filter = torch.nan_to_num((sign == final_sign).float() / sign_counts)
+        delta_filter = torch.nan_to_num(((sign == final_sign) & (sign != 0)).float() / sign_counts)
         res += alpha * delta_filter * delta
 
     return res
 
 
 def filter_top_k(a: Tensor, k: float):
-    k = max(int(k * torch.numel(a)), 1)
+    k = max(int((1 - k) * torch.numel(a)), 1)
     k_value, _ = torch.kthvalue(torch.abs(a.flatten()), k)
     top_k_filter = (torch.abs(a) >= k_value).float()
     return a * top_k_filter
