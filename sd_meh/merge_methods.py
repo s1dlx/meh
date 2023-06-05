@@ -97,14 +97,15 @@ def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> T
 
     index_begin = int(alpha * torch.numel(a) / 2)
     index_end = torch.numel(a) - index_begin
-    redist_indices = torch.cat([
+    redist_indices = [
         torch.argsort(b_indices)[:index_begin],
         torch.argsort(a_indices)[index_begin:index_end],
         torch.argsort(b_indices)[index_end:],
-    ])
+    ]
+    redist_indices = torch.cat(redist_indices)
+
     a_redist = torch.gather(a_dist, 0, redist_indices)
-    a_trans = a_redist.reshape(a.shape)
-    return a_trans
+    return a_redist.reshape_as(a)
 
 
 def similarity_add_difference(
