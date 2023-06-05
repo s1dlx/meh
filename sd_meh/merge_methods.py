@@ -10,6 +10,7 @@ __all__ = [
     "triple_sum",
     "transmogrify_distribution",
     "similarity_add_difference",
+    "ties_add_difference",
 ]
 
 
@@ -79,15 +80,20 @@ def similarity_add_difference(
     return (1 - similarity) * ab_diff + similarity * ab_sum
 
 
-def similarity_add_difference2(
+def ties_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    threshold = torch.maximum(torch.abs(a), torch.abs(b))
-    similarity = a * b / threshold**2
-    similarity = torch.minimum(torch.maximum(torch.nan_to_num(similarity, nan=1), torch.zeros_like(similarity)), torch.ones_like(similarity))
-    try:
-        similarity = torch.ceil(similarity)
-    except RuntimeError:
-        similarity = torch.ceil(similarity.float()).half()
+    a_topk = topk_filter((a - c).cuda(), beta)
+    signs_list = [torch.sign(a_topk)]
+    b_topk = topk_filter((b - c).cuda(), beta)
+    signs_list += [torch.sign(b_topk)]
+    signs = torch.sign(torch.sum(torch.stack(signs_list, dim=0), dim=0))
+    a_filter = alpha * ((signs == signs_list[0]) * (signs_list[0] != 0)).float()
+    b_filter = alpha * ((signs == signs_list[1]) * (signs_list[0] != 0)).float()
+    return (c.cuda() + a_filter * (a - c).cuda() + b_filter * (b - c).cuda()).cpu()
 
-    return a + similarity * alpha * (b - c)
+
+def topk_filter(a: Tensor, k: float):
+    a_value, a_index = torch.kthvalue(torch.abs(a.flatten()), max(int(k * torch.numel(a)), 1))
+    res = a / (1 + torch.exp(32 - 32 * torch.abs(a) / a_value))
+    return torch.nan_to_num(res)
