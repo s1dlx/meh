@@ -1,7 +1,7 @@
-from typing import Tuple, List
-
 import torch
 from torch import Tensor
+from typing import Tuple, List
+
 
 __all__ = [
     "weighted_sum",
