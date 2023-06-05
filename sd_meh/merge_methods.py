@@ -90,8 +90,8 @@ def ties_add_difference(
         topk = topk_filter(m - c, beta)
         signs.append((topk, torch.sign(topk)))
 
-    sings_only = [m_signs for _, m_signs in signs]
-    total_signs = torch.sign(torch.sum(torch.stack(sings_only, dim=0), dim=0))
+    signs_only = [m_signs for _, m_signs in signs]
+    total_signs = torch.sign(torch.sum(torch.stack(signs_only, dim=0), dim=0))
     res = c
     for m_signs, m_delta in signs:
         m_filter = (m_signs == total_signs).float()
