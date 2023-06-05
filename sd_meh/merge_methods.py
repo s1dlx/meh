@@ -8,8 +8,11 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "euclidean_add_difference",
+    "multiply_difference",
     "transmogrify_distribution",
     "similarity_add_difference",
+    "distribution_crossover",
 ]
 
 
@@ -60,11 +63,40 @@ def triple_sum(
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    a_values = torch.msort(torch.flatten(a))
+def euclidean_add_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
+    distance = (a - c) ** 2 + alpha * (b - c) ** 2
+    try:
+        distance = torch.sqrt(distance)
+    except RuntimeError:
+        distance = torch.sqrt(distance.float()).half()
+    distance = torch.copysign(distance, (a - c) + alpha * (b - c))
+
+    a_norm = torch.linalg.norm(a - c)
+    b_norm = torch.linalg.norm(b - c)
+    target_norm = (1 - alpha / 2) * a_norm + (alpha / 2) * b_norm
+    return c + distance / torch.linalg.norm(distance) * target_norm
+
+
+def multiply_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
+    difference = torch.abs((a - c) * (b - c))
+    try:
+        difference = torch.sqrt(difference)
+    except RuntimeError:
+        difference = torch.sqrt(difference.float()).half()
+    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
+    return c + alpha * difference
+
+
+def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
+    a_dist = torch.msort(torch.flatten(a))
     b_indices = torch.argsort(torch.flatten(b), stable=True)
-    redistributed_a_values = torch.gather(a_values, 0, torch.argsort(b_indices))
-    return redistributed_a_values.reshape(a.shape)
+    a_redist = torch.gather(a_dist, 0, torch.argsort(b_indices))
+    a_trans = a_redist.reshape(a.shape)
+    return (1 - alpha) * b + alpha * a_trans
 
 
 def similarity_add_difference(
@@ -77,3 +109,30 @@ def similarity_add_difference(
     ab_diff = a + alpha * (b - c)
     ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
+
+
+def distribution_crossover(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+):
+    if a.shape == ():
+        return alpha * a + (1 - alpha) * b
+
+    c_indices = torch.argsort(torch.flatten(c))
+    a_dist = torch.gather(torch.flatten(a), 0, c_indices)
+    b_dist = torch.gather(torch.flatten(b), 0, c_indices)
+
+    a_dft = torch.fft.rfft(a_dist.float())
+    b_dft = torch.fft.rfft(b_dist.float())
+
+    dft_filter = torch.arange(0, torch.numel(a_dft), device=a_dft.device).float()
+    dft_filter /= torch.numel(a_dft)
+    if beta > EPSILON:
+        dft_filter = (dft_filter - alpha) / beta + 1 / 2
+        dft_filter = torch.clamp(dft_filter, 0.0, 1.0)
+    else:
+        dft_filter = (dft_filter >= alpha).float()
+
+    x_dft = (1 - dft_filter) * a_dft + dft_filter * b_dft
+    x_dist = torch.fft.irfft(x_dft, a_dist.shape[0])
+    x_values = torch.gather(x_dist, 0, torch.argsort(c_indices))
+    return x_values.reshape_as(a)
