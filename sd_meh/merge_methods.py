@@ -94,6 +94,7 @@ def ties_add_difference(
 
 
 def topk_filter(a: Tensor, k: float):
-    a_value, a_index = torch.kthvalue(torch.abs(a.flatten()), max(int(k * torch.numel(a)), 1))
+    top_k = max(int(k * torch.numel(a)), 1)
+    a_value, a_index = torch.kthvalue(torch.abs(a.flatten()), top_k)
     res = a / (1 + torch.exp(32 - 32 * torch.abs(a) / a_value))
     return torch.nan_to_num(res)
