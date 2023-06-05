@@ -42,12 +42,15 @@ Options:
   -rb, --re_basin
   -rbi, --re_basin_iterations INTEGER
   -d, --device [cpu|cuda]
+  -pr, --prune
   --help                          Show this message and exit.
 ```
 
 ## Features
 
-- weights matching
+- gpu merging
+- prune model before merging (and un-prune at the end)
+- weights matching aka re-basin
 - weights clipping
 - registered pypi package
 - block merge
