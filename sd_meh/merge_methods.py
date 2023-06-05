@@ -83,14 +83,17 @@ def similarity_add_difference(
 def ties_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_topk = topk_filter((a - c).cuda(), beta)
-    signs_list = [torch.sign(a_topk)]
-    b_topk = topk_filter((b - c).cuda(), beta)
-    signs_list += [torch.sign(b_topk)]
+    signs_list = []
+    for m in [a, b]:
+        topk = topk_filter(m - c, beta)
+        signs_list.append(torch.sign(topk))
+
     signs = torch.sign(torch.sum(torch.stack(signs_list, dim=0), dim=0))
-    a_filter = alpha * ((signs == signs_list[0]) * (signs_list[0] != 0)).float()
-    b_filter = alpha * ((signs == signs_list[1]) * (signs_list[0] != 0)).float()
-    return (c.cuda() + a_filter * (a - c).cuda() + b_filter * (b - c).cuda()).cpu()
+    res = c
+    for s, m in zip(signs_list, [a, b]):
+        delta_filter = ((s == signs) & (s != 0)).float()
+        res += alpha * delta_filter * (m - c)
+    return res
 
 
 def topk_filter(a: Tensor, k: float):
