@@ -93,7 +93,10 @@ def ties_add_difference(
 
     stacked_signs = torch.stack(signs, dim=0)
     final_sign = torch.sign(torch.sum(stacked_signs, dim=0))
-    sign_counts = torch.sum(((stacked_signs != 0) & (stacked_signs == final_sign)).float(), dim=0)
+    sign_counts = torch.sum(
+        ((stacked_signs != 0) & (stacked_signs == final_sign)).float(),
+        dim=0,
+    )
 
     res = c
     for sign, delta in zip(signs, deltas):
