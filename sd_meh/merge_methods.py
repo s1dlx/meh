@@ -100,7 +100,7 @@ def ties_add_difference(
 
     res = c
     for sign, delta in zip(signs, deltas):
-        delta_filter = torch.nan_to_num(((sign == final_sign) & (sign != 0)).float() / sign_counts)
+        delta_filter = torch.nan_to_num((sign == final_sign).float() / sign_counts)
         res += alpha * delta_filter * delta
 
     return res
