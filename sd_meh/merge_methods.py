@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import torch
 from torch import Tensor
 
@@ -83,16 +85,16 @@ def similarity_add_difference(
 def ties_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    signs_list = []
+    signs: List[Tuple[Tensor, Tensor]] = []
     for m in [a, b]:
         topk = topk_filter(m - c, beta)
-        signs_list.append(torch.sign(topk))
+        signs.append((topk, torch.sign(topk)))
 
-    signs = torch.sign(torch.sum(torch.stack(signs_list, dim=0), dim=0))
+    total_signs = torch.sign(torch.sum(torch.stack([t[1] for t in signs], dim=0), dim=0))
     res = c
-    for s, m in zip(signs_list, [a, b]):
-        delta_filter = ((s == signs) & (s != 0)).float()
-        res += alpha * delta_filter * (m - c)
+    for m_signs, m in signs:
+        delta_filter = (m_signs == total_signs).float()
+        res += alpha * delta_filter * m
     return res
 
 
