@@ -63,7 +63,6 @@ def triple_sum(
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-<<<<<<< HEAD
 def euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
