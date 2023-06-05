@@ -93,17 +93,14 @@ def ties_add_difference(
 
     stacked_signs = torch.stack(signs, dim=0)
     final_sign = torch.sign(torch.sum(stacked_signs, dim=0))
-    sign_counts = torch.sum(
-        ((stacked_signs != 0) & (stacked_signs == final_sign)).float(),
-        dim=0,
-    )
 
-    res = c
+    res = torch.zeros_like(c)
     for sign, delta in zip(signs, deltas):
-        delta_filter = torch.nan_to_num((sign == final_sign).float() / sign_counts)
+        delta_filter = (sign == final_sign).float()
         res += alpha * delta_filter * delta
 
-    return res
+    param_count = torch.sum((stacked_signs == final_sign).float(), dim=0)
+    return c + torch.nan_to_num(res / param_count)
 
 
 def filter_top_k(a: Tensor, k: float):
