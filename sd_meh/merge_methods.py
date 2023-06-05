@@ -60,11 +60,12 @@ def triple_sum(
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
-def transmogrify_distribution(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    a_values = torch.msort(torch.flatten(a))
+def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
+    a_dist = torch.msort(torch.flatten(a))
     b_indices = torch.argsort(torch.flatten(b), stable=True)
-    redistributed_a_values = torch.gather(a_values, 0, torch.argsort(b_indices))
-    return redistributed_a_values.reshape(a.shape)
+    a_redist = torch.gather(a_dist, 0, torch.argsort(b_indices))
+    a_trans = a_redist.reshape(a.shape)
+    return (1 - alpha) * b + alpha * a_trans
 
 
 def similarity_add_difference(
