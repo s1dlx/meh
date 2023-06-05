@@ -92,9 +92,9 @@ def ties_add_difference(
 
     total_signs = torch.sign(torch.sum(torch.stack([t[1] for t in signs], dim=0), dim=0))
     res = c
-    for m_signs, m in signs:
+    for m_signs, m_delta in signs:
         m_filter = (m_signs == total_signs).float()
-        res += alpha * m_filter * m
+        res += alpha * m_filter * m_delta
     return res
 
 
