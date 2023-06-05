@@ -155,10 +155,10 @@ def ties_add_difference(
 
     res = torch.zeros_like(c)
     for delta_filter, delta in zip(delta_filters, deltas):
-        res += alpha * delta_filter * delta
+        res += delta_filter * delta
 
     param_count = torch.sum(delta_filters, dim=0)
-    return c + torch.nan_to_num(res / param_count)
+    return c + alpha * torch.nan_to_num(res / param_count)
 
 
 def filter_top_k(a: Tensor, k: float):
