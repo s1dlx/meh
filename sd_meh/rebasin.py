@@ -1624,7 +1624,12 @@ def sdunet_permutation_spec() -> PermutationSpec:
                 None,
                 None,
             ),
-             **dense("cond_stage_model.transformer.text_model.embeddings.token_embedding","P_bg365", "P_bg366",bias=False),
+            **dense(
+                "cond_stage_model.transformer.text_model.embeddings.token_embedding",
+                "P_bg365",
+                "P_bg366",
+                bias=False,
+            ),
             **dense(
                 "cond_stage_model.transformer.text_model.embeddings.token_embedding",
                 None,
