@@ -91,11 +91,13 @@ def ties_add_difference(
         deltas.append(filter_top_k(m - c, beta))
         signs.append(torch.sign(deltas[-1]))
 
-    sign_sum = torch.sign(torch.sum(torch.stack(signs, dim=0), dim=0))
+    stacked_signs = torch.stack(signs, dim=0)
+    final_sign = torch.sign(torch.sum(stacked_signs, dim=0))
+    sign_counts = torch.sum(((stacked_signs != 0) & (stacked_signs == final_sign)).float(), dim=0)
 
     res = c
     for sign, delta in zip(signs, deltas):
-        delta_filter = (sign == sign_sum).float()
+        delta_filter = torch.nan_to_num((sign == final_sign).float() / sign_counts)
         res += alpha * delta_filter * delta
 
     return res
