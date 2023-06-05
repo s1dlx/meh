@@ -77,3 +77,17 @@ def similarity_add_difference(
     ab_diff = a + alpha * (b - c)
     ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
+
+
+def similarity_add_difference2(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
+    threshold = torch.maximum(torch.abs(a), torch.abs(b))
+    similarity = a * b / threshold**2
+    similarity = torch.minimum(torch.maximum(torch.nan_to_num(similarity, nan=1), torch.zeros_like(similarity)), torch.ones_like(similarity))
+    try:
+        similarity = torch.ceil(similarity)
+    except RuntimeError:
+        similarity = torch.ceil(similarity.float()).half()
+
+    return a + similarity * alpha * (b - c)
