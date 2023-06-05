@@ -87,7 +87,7 @@ def ties_add_difference(
 ) -> Tensor:
     signs: List[Tuple[Tensor, Tensor]] = []
     for m in [a, b]:
-        topk = topk_filter(m - c, beta)
+        topk = filter_topk(m - c, beta)
         signs.append((topk, torch.sign(topk)))
 
     signs_only = [m_signs for _, m_signs in signs]
@@ -99,8 +99,8 @@ def ties_add_difference(
     return res
 
 
-def topk_filter(a: Tensor, k: float):
+def filter_topk(a: Tensor, k: float):
     top_k = max(int(k * torch.numel(a)), 1)
     a_value, a_index = torch.kthvalue(torch.abs(a.flatten()), top_k)
-    res = a / (1 + torch.exp(32 - 32 * torch.abs(a) / a_value))
-    return torch.nan_to_num(res)
+    top_k_filter = (torch.abs(a) >= a_value).float()
+    return a * top_k_filter
