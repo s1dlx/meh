@@ -8,6 +8,7 @@ __all__ = [
     "add_difference",
     "sum_twice",
     "triple_sum",
+    "multiply_difference",
     "transmogrify_distribution",
     "similarity_add_difference",
     "distribution_crossover",
@@ -59,6 +60,18 @@ def triple_sum(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
+
+def multiply_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
+    difference = torch.abs((a - c) * (b - c))
+    try:
+        difference = torch.sqrt(difference)
+    except RuntimeError:
+        difference = torch.sqrt(difference.float()).half()
+    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
+    return c + alpha * difference
 
 
 def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
