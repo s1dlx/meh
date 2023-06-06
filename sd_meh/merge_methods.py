@@ -114,10 +114,10 @@ def transmogrify_distribution(
     redist_indices = torch.argsort(b_indices)
     indices_mask = start_top_k <= torch.abs(a_dist)
     indices_mask &= torch.abs(a_dist) < end_top_k
+    if invert_mask:
+        indices_mask = ~indices_mask
     indices_mask = indices_mask.float()
     indices_mask = torch.gather(indices_mask, 0, redist_indices)
-    if invert_mask:
-        indices_mask = 1 - indices_mask
 
     a_redist = torch.gather(a_dist, 0, redist_indices)
     a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
