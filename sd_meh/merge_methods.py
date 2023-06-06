@@ -95,18 +95,18 @@ def transmogrify_distribution(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     a_flat = torch.flatten(a)
-    a_dist, a_order = torch.sort(a_flat)
-    b_order = torch.argsort(torch.flatten(b), stable=True)
+    a_dist = torch.msort(a_flat)
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
 
     indices_mask = tensor_sum(
-        torch.zeros_like(a_order, device=a_order.device),
-        torch.ones_like(a_order, device=a_order.device),
+        torch.zeros_like(a_dist, device=a_dist.device),
+        torch.ones_like(a_dist, device=a_dist.device),
         alpha,
         0.5 + beta - alpha / 2,
     )
 
-    indices_mask = torch.gather(indices_mask, 0, torch.argsort(b_order))
-    a_redist = torch.gather(a_dist, 0, torch.argsort(b_order))
+    indices_mask = torch.gather(indices_mask, 0, torch.argsort(b_indices))
+    a_redist = torch.gather(a_dist, 0, torch.argsort(b_indices))
     return ((1 - indices_mask) * a_flat + indices_mask * a_redist).reshape_as(a)
 
 
