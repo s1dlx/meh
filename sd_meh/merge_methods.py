@@ -94,9 +94,9 @@ def multiply_difference(
 def transmogrify_distribution(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_flat = torch.flatten(a)
+    a_flat = torch.flatten(a).cuda()
     a_dist = torch.msort(a_flat)
-    b_indices = torch.argsort(torch.flatten(b), stable=True)
+    b_indices = torch.argsort(torch.flatten(b.cuda()), stable=True)
 
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
@@ -112,12 +112,10 @@ def transmogrify_distribution(
     end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(end_top_k)))
 
     redist_indices = torch.argsort(b_indices)
-    indices_mask = start_top_k <= torch.abs(a_dist)
-    indices_mask &= torch.abs(a_dist) < end_top_k
+    indices_mask = (start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_top_k)
     if invert_mask:
         indices_mask = ~indices_mask
-    indices_mask = indices_mask.float()
-    indices_mask = torch.gather(indices_mask, 0, redist_indices)
+    indices_mask = torch.gather(indices_mask.float(), 0, redist_indices)
 
     a_redist = torch.gather(a_dist, 0, redist_indices)
     a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
