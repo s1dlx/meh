@@ -100,16 +100,19 @@ def transmogrify_distribution(
 
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
-        start_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(beta * a_numel)))
-        end_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int((alpha + beta) * a_numel)))
+        start_top_k = max(1, int(beta * a_numel))
+        end_top_k = max(1, int((alpha + beta) * a_numel))
         invert_mask = False
     else:
-        start_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int((alpha + beta - 1) * a_numel)))
-        end_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(beta * a_numel)))
+        start_top_k, _ = max(1, int((alpha + beta - 1) * a_numel))
+        end_top_k, _ = max(1, int(beta * a_numel))
         invert_mask = True
 
+    start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), start_top_k)
+    end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), end_top_k)
+
     redist_indices = torch.argsort(b_indices)
-    indices_mask = ((start_k_value <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_k_value)).float()
+    indices_mask = ((start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_top_k)).float()
     indices_mask = torch.gather(indices_mask, 0, redist_indices)
     if invert_mask:
         indices_mask = 1 - indices_mask
