@@ -98,18 +98,25 @@ def transmogrify_distribution(
     a_dist = torch.msort(a_flat)
     b_indices = torch.argsort(torch.flatten(b), stable=True)
 
-    indices_mask = tensor_sum(
-        torch.zeros_like(a_dist, device=a_dist.device),
-        torch.ones_like(a_dist, device=a_dist.device),
-        alpha,
-        0.5 + beta - alpha / 2,
-    )
+    a_numel = torch.numel(a)
+    if alpha + beta <= 1:
+        start_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(beta * a_numel)))
+        end_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int((alpha + beta) * a_numel)))
+        invert_mask = False
+    else:
+        start_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int((alpha + beta - 1) * a_numel)))
+        end_k_value, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(beta * a_numel)))
+        invert_mask = True
 
     redist_indices = torch.argsort(b_indices)
+    indices_mask = ((start_k_value <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_k_value)).float()
     indices_mask = torch.gather(indices_mask, 0, redist_indices)
+    if invert_mask:
+        indices_mask = 1 - indices_mask
+
     a_redist = torch.gather(a_dist, 0, redist_indices)
     a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
-    return a_redist.reshape_as(a)
+    return a_redist.reshape_as(a).cpu()
 
 
 def similarity_add_difference(
