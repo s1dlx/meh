@@ -102,12 +102,14 @@ def transmogrify_distribution(
         torch.zeros_like(a_dist, device=a_dist.device),
         torch.ones_like(a_dist, device=a_dist.device),
         alpha,
-        beta,
+        0.5 + beta - alpha / 2,
     )
 
-    indices_mask = torch.gather(indices_mask, 0, torch.argsort(b_indices))
-    a_redist = torch.gather(a_dist, 0, torch.argsort(b_indices))
-    return ((1 - indices_mask) * a_flat + indices_mask * a_redist).reshape_as(a)
+    redist_indices = torch.argsort(b_indices)
+    indices_mask = torch.gather(indices_mask, 0, redist_indices)
+    a_redist = torch.gather(a_dist, 0, redist_indices)
+    a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
+    return a_redist.reshape_as(a)
 
 
 def similarity_add_difference(
