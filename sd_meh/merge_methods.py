@@ -83,12 +83,8 @@ def multiply_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
     difference = torch.abs((a - c) * (b - c))
-    try:
-        difference = torch.sqrt(difference)
-    except RuntimeError:
-        difference = torch.sqrt(difference.float()).half()
-    difference = torch.copysign(difference, a + b - 2 * c)
-    return c + alpha * difference
+    difference = torch.copysign(torch.sqrt(difference.float()), a + b - 2 * c)
+    return c + alpha * difference.to(a.device)
 
 
 def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
