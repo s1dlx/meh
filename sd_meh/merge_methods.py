@@ -82,8 +82,8 @@ def euclidean_add_difference(
 def multiply_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
-    difference = torch.abs((a - c) * (b - c))
-    difference = torch.copysign(torch.sqrt(difference.float()), a + b - 2 * c)
+    difference = torch.abs((a.float() - c) * (b.float() - c))
+    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
     return c + alpha * difference.to(a.device)
 
 
