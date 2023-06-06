@@ -94,14 +94,20 @@ def multiply_difference(
 def transmogrify_distribution(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_dist, a_indices = torch.sort(torch.flatten(a))
-    a_indices = torch.argsort(a_indices)
-    b_indices = torch.argsort(torch.argsort(torch.flatten(b), stable=True))
+    a_flat = torch.flatten(a)
+    a_dist, a_order = torch.sort(a_flat)
+    b_order = torch.argsort(torch.flatten(b), stable=True)
 
-    redist_indices = tensor_sum(a_indices, b_indices, alpha, beta)
+    indices_mask = tensor_sum(
+        torch.zeros_like(a_order, device=a_order.device),
+        torch.ones_like(a_order, device=a_order.device),
+        alpha,
+        0.5 + beta - alpha / 2,
+    )
 
-    a_redist = torch.gather(a_dist, 0, redist_indices)
-    return a_redist.reshape_as(a)
+    indices_mask = torch.gather(indices_mask, 0, torch.argsort(b_order))
+    a_redist = torch.gather(a_dist, 0, torch.argsort(b_order))
+    return ((1 - indices_mask) * a_flat + indices_mask * a_redist).reshape_as(a)
 
 
 def similarity_add_difference(
