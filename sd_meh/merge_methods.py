@@ -87,7 +87,7 @@ def multiply_difference(
         difference = torch.sqrt(difference)
     except RuntimeError:
         difference = torch.sqrt(difference.float()).half()
-    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
+    difference = torch.copysign(difference, a + b - 2 * c)
     return c + alpha * difference
 
 
