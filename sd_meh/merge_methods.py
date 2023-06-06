@@ -100,16 +100,16 @@ def transmogrify_distribution(
 
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
-        start_top_k = max(1, int(beta * a_numel))
-        end_top_k = max(1, int((alpha + beta) * a_numel))
+        start_top_k = beta * a_numel
+        end_top_k = (alpha + beta) * a_numel
         invert_mask = False
     else:
-        start_top_k = max(1, int((alpha + beta - 1) * a_numel))
-        end_top_k = max(1, int(beta * a_numel))
+        start_top_k = (alpha + beta - 1) * a_numel
+        end_top_k = beta * a_numel
         invert_mask = True
 
-    start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), start_top_k)
-    end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), end_top_k)
+    start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(start_top_k)))
+    end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(end_top_k)))
 
     redist_indices = torch.argsort(b_indices)
     indices_mask = start_top_k <= torch.abs(a_dist)
@@ -121,7 +121,7 @@ def transmogrify_distribution(
 
     a_redist = torch.gather(a_dist, 0, redist_indices)
     a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
-    return a_redist.reshape_as(a).cpu()
+    return a_redist.reshape_as(a)
 
 
 def similarity_add_difference(
