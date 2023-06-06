@@ -153,7 +153,7 @@ def ties_add_difference(
     final_sign = torch.sign(torch.sum(signs, dim=0))
     delta_filters = (signs == final_sign).float()
 
-    res = torch.zeros_like(c)
+    res = torch.zeros_like(c, device=c.device)
     for delta_filter, delta in zip(delta_filters, deltas):
         res += delta_filter * delta
 
