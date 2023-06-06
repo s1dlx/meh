@@ -94,9 +94,9 @@ def multiply_difference(
 def transmogrify_distribution(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_flat = torch.flatten(a).cuda()
+    a_flat = torch.flatten(a)
     a_dist = torch.msort(a_flat)
-    b_indices = torch.argsort(torch.flatten(b.cuda()), stable=True)
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
 
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
