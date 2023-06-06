@@ -102,7 +102,7 @@ def transmogrify_distribution(
         torch.zeros_like(a_dist, device=a_dist.device),
         torch.ones_like(a_dist, device=a_dist.device),
         alpha,
-        0.5 + beta - alpha / 2,
+        beta,
     )
 
     indices_mask = torch.gather(indices_mask, 0, torch.argsort(b_indices))
