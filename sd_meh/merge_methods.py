@@ -145,8 +145,8 @@ def ties_add_difference(
 ) -> Tensor:
     deltas = []
     signs = []
-    for m in [b, c]:
-        deltas.append(filter_top_k(m - a, beta))
+    for m in [a, b]:
+        deltas.append(filter_top_k(m - c, beta))
         signs.append(torch.sign(deltas[-1]))
 
     signs = torch.stack(signs, dim=0)
@@ -158,7 +158,7 @@ def ties_add_difference(
         res += delta_filter * delta
 
     param_count = torch.sum(delta_filters, dim=0)
-    return a + alpha * torch.nan_to_num(res / param_count)
+    return c + alpha * torch.nan_to_num(res / param_count)
 
 
 def filter_top_k(a: Tensor, k: float):
