@@ -82,9 +82,9 @@ def euclidean_add_difference(
 def multiply_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
-    difference = torch.abs((a.float() - c) * (b.float() - c))
+    difference = torch.abs((a.float() - c) * (weighted_sum(a, b, alpha).float() - c))
     difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
-    return c + alpha * difference.to(a.dtype)
+    return c + difference.to(a.dtype)
 
 
 def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
