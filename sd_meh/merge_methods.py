@@ -4,6 +4,7 @@ import math
 from typing import Tuple
 
 
+
 __all__ = [
     "weighted_sum",
     "weighted_subtraction",
@@ -16,6 +17,7 @@ __all__ = [
     "top_k_tensor_sum",
     "similarity_add_difference",
     "distribution_crossover",
+    "ties_add_difference",
 ]
 
 
@@ -182,3 +184,31 @@ def distribution_crossover(
     x_dist = torch.fft.irfft(x_dft, a_dist.shape[0])
     x_values = torch.gather(x_dist, 0, torch.argsort(c_indices))
     return x_values.reshape_as(a)
+
+
+def ties_add_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+) -> Tensor:
+    deltas = []
+    signs = []
+    for m in [a, b]:
+        deltas.append(filter_top_k(m - c, beta))
+        signs.append(torch.sign(deltas[-1]))
+
+    signs = torch.stack(signs, dim=0)
+    final_sign = torch.sign(torch.sum(signs, dim=0))
+    delta_filters = (signs == final_sign).float()
+
+    res = torch.zeros_like(c, device=c.device)
+    for delta_filter, delta in zip(delta_filters, deltas):
+        res += delta_filter * delta
+
+    param_count = torch.sum(delta_filters, dim=0)
+    return c + alpha * torch.nan_to_num(res / param_count)
+
+
+def filter_top_k(a: Tensor, k: float):
+    k = max(int((1 - k) * torch.numel(a)), 1)
+    k_value, _ = torch.kthvalue(torch.abs(a.flatten()).float(), k)
+    top_k_filter = (torch.abs(a) >= k_value).float()
+    return a * top_k_filter
