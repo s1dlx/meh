@@ -43,10 +43,10 @@ NAI_KEYS = {
 }
 
 
-def fix_clip(model: Dict, device: str) -> Dict:
+def fix_clip(model: Dict) -> Dict:
     if KEY_POSITION_IDS in model.keys():
         model[KEY_POSITION_IDS] = torch.tensor(
-            [list(range(MAX_TOKENS))], dtype=torch.int64, device=device
+            [list(range(MAX_TOKENS))], dtype=torch.int64, device=model[KEY_POSITION_IDS].device
         )
 
     return model
@@ -62,10 +62,10 @@ def fix_key(model: Dict, key: str) -> Dict:
 
 
 # https://github.com/j4ded/sdweb-merge-block-weighted-gui/blob/master/scripts/mbw/merge_block_weighted.py#L115
-def fix_model(model: Dict, device: str) -> Dict:
+def fix_model(model: Dict) -> Dict:
     for k in model.keys():
         model = fix_key(model, k)
-    return fix_clip(model, device)
+    return fix_clip(model)
 
 
 def load_sd_model(model: os.PathLike | str, device: str = "cpu") -> Dict:
@@ -159,7 +159,6 @@ def merge_models(
             merge_mode,
             precision=precision,
             weights_clip=weights_clip,
-            device=device,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -198,7 +197,7 @@ def un_prune_model(
                     merged.update({key: merged[key].half()})
         del original_b
 
-    return fix_model(merged, device)
+    return fix_model(merged)
 
 
 def simple_merge(
@@ -208,7 +207,6 @@ def simple_merge(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
-    device: str = "cpu",
 ) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         with merge_key_context(
@@ -229,7 +227,7 @@ def simple_merge(
 
     log_vram("after stage 2")
 
-    return fix_model(thetas["model_a"], device)
+    return fix_model(thetas["model_a"])
 
 
 def rebasin_merge(
@@ -256,7 +254,7 @@ def rebasin_merge(
 
         # normal block merge we already know and love
         thetas["model_a"] = simple_merge(
-            thetas, new_weights, new_bases, merge_mode, precision, weights_clip, device
+            thetas, new_weights, new_bases, merge_mode, precision, weights_clip
         )
 
         log_vram("simple merge done")
