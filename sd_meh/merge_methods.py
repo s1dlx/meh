@@ -68,8 +68,8 @@ def triple_sum(
 def euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
-    a_diff = (a.float() - c.float())
-    b_diff = (b.float() - c.float())
+    a_diff = a.float() - c.float()
+    b_diff = b.float() - c.float()
 
     a_norm = torch.linalg.norm(a_diff)
     b_norm = torch.linalg.norm(b_diff)
