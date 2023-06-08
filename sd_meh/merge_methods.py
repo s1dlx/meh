@@ -10,7 +10,7 @@ __all__ = [
     "triple_sum",
     "euclidean_add_difference",
     "multiply_difference",
-    "transmogrify_distribution",
+    "top_k_tensor_sum",
     "similarity_add_difference",
     "distribution_crossover",
 ]
@@ -91,7 +91,7 @@ def multiply_difference(
     return c + alpha * difference
 
 
-def transmogrify_distribution(
+def top_k_tensor_sum(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     a_flat = torch.flatten(a)
