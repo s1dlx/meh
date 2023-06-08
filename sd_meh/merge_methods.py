@@ -68,12 +68,16 @@ def triple_sum(
 def euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
-    distance = (a.float() - c) ** 2 + alpha * (b.float() - c) ** 2
-    distance = torch.sqrt(distance)
-    distance = torch.copysign(distance, a.float() - c + alpha * (b.float() - c))
+    a_diff = (a.float() - c.float())
+    b_diff = (b.float() - c.float())
 
-    a_norm = torch.linalg.norm(a.float() - c)
-    b_norm = torch.linalg.norm(b.float() - c)
+    a_norm = torch.linalg.norm(a_diff)
+    b_norm = torch.linalg.norm(b_diff)
+
+    distance = (1 - alpha) * (a_diff / a_norm) ** 2 + alpha * (b_diff / b_norm) ** 2
+    distance = torch.sqrt(distance)
+    distance = torch.copysign(distance, weighted_sum(a.float(), b.float(), alpha) - c.float())
+
     target_norm = (1 - alpha / 2) * a_norm + (alpha / 2) * b_norm
     return c + distance / torch.linalg.norm(distance) * target_norm
 
