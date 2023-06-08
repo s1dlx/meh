@@ -1624,7 +1624,12 @@ def sdunet_permutation_spec() -> PermutationSpec:
                 None,
                 None,
             ),
-            #  **dense("cond_stage_model.transformer.text_model.embeddings.token_embedding","P_bg365", "P_bg366",bias=False),
+            **dense(
+                "cond_stage_model.transformer.text_model.embeddings.token_embedding",
+                "P_bg365",
+                "P_bg366",
+                bias=False,
+            ),
             **dense(
                 "cond_stage_model.transformer.text_model.embeddings.token_embedding",
                 None,
@@ -2181,7 +2186,7 @@ def get_permuted_param(ps: PermutationSpec, perm, k: str, params, except_axis=No
             continue
 
         # None indicates that there is no permutation relevant to that axis.
-        if p is not None:
+        if p:
             w = torch.index_select(w, axis, perm[p].int())
 
     return w
@@ -2190,6 +2195,14 @@ def get_permuted_param(ps: PermutationSpec, perm, k: str, params, except_axis=No
 def apply_permutation(ps: PermutationSpec, perm, params):
     """Apply a `perm` to `params`."""
     return {k: get_permuted_param(ps, perm, k, params) for k in params.keys()}
+
+
+def update_model_a(ps: PermutationSpec, perm, model_a, new_alpha):
+    for k in model_a:
+        model_a[k] = model_a[k] * (1 - new_alpha) + new_alpha * get_permuted_param(
+            ps, perm, k, model_a
+        )
+    return model_a
 
 
 def inner_matching(
@@ -2206,6 +2219,7 @@ def inner_matching(
     device,
 ):
     A = torch.zeros((n, n), dtype=torch.float16) if usefp16 else torch.zeros((n, n))
+    A = A.to(device)
 
     for wk, axis in ps.perm_to_axes[p]:
         w_a = params_a[wk]
@@ -2214,8 +2228,8 @@ def inner_matching(
         w_b = torch.moveaxis(w_b, axis, 0).reshape((n, -1)).T.to(device)
 
         if usefp16:
-            w_a = w_a.half()
-            w_b = w_b.half()
+            w_a = w_a.half().to(device)
+            w_b = w_b.half().to(device)
 
         try:
             A += torch.matmul(w_a, w_b)
@@ -2224,16 +2238,16 @@ def inner_matching(
 
     A = A.cpu()
     ri, ci = linear_sum_assignment(A.detach().numpy(), maximize=True)
-
-    if device == "cuda":
-        A = A.cuda()
+    A = A.to(device)
 
     assert (torch.tensor(ri) == torch.arange(len(ri))).all()
 
+    eye_tensor = torch.eye(n).to(device)
+
     oldL = torch.vdot(
-        torch.flatten(A).float(), torch.flatten(torch.eye(n)[perm[p].long()])
+        torch.flatten(A).float(), torch.flatten(eye_tensor[perm[p].long()])
     )
-    newL = torch.vdot(torch.flatten(A).float(), torch.flatten(torch.eye(n)[ci, :]))
+    newL = torch.vdot(torch.flatten(A).float(), torch.flatten(eye_tensor[ci, :]))
 
     if usefp16:
         oldL = oldL.half()
@@ -2246,7 +2260,7 @@ def inner_matching(
 
     progress = progress or newL > oldL + 1e-12
 
-    perm[p] = torch.Tensor(ci)
+    perm[p] = torch.Tensor(ci).to(device)
 
     return linear_sum, number, perm, progress
 
@@ -2261,40 +2275,40 @@ def weight_matching(
     device="cpu",
 ):
     perm_sizes = {
-        p: params_a[axes[0][0]].shape[axes[0][1]] for p, axes in ps.perm_to_axes.items()
+        p: params_a[axes[0][0]].shape[axes[0][1]]
+        for p, axes in ps.perm_to_axes.items()
+        if axes[0][0] in params_a.keys()
     }
     perm = {}
     perm = (
-        {p: torch.arange(n) for p, n in perm_sizes.items()}
+        {p: torch.arange(n).to(device) for p, n in perm_sizes.items()}
         if init_perm is None
         else init_perm
     )
-    perm_names = list(perm.keys())
+
     linear_sum = 0
     number = 0
 
-    special_layers = ["P_bg358", "P_bg324", "P_bg337"]
+    special_layers = ["P_bg324", "P_bg358", "P_bg337"]
     for _ in range(max_iter):
         progress = False
         shuffle(special_layers)
-        for p_ix in special_layers:
-            p = p_ix
-            if p in special_layers:
-                n = perm_sizes[p]
+        for p in special_layers:
+            n = perm_sizes[p]
 
-                linear_sum, number, perm, progress = inner_matching(
-                    n,
-                    ps,
-                    p,
-                    params_a,
-                    params_b,
-                    usefp16,
-                    progress,
-                    number,
-                    linear_sum,
-                    perm,
-                    device,
-                )
+            linear_sum, number, perm, progress = inner_matching(
+                n,
+                ps,
+                p,
+                params_a,
+                params_b,
+                usefp16,
+                progress,
+                number,
+                linear_sum,
+                perm,
+                device,
+            )
         if not progress:
             break
 
