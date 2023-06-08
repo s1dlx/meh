@@ -76,7 +76,8 @@ def euclidean_add_difference(
 
     distance = (1 - alpha) * (a_diff / a_norm) ** 2 + alpha * (b_diff / b_norm) ** 2
     distance = torch.sqrt(distance)
-    distance = torch.copysign(distance, weighted_sum(a.float(), b.float(), alpha) - c.float())
+    sum_diff = weighted_sum(a.float(), b.float(), alpha) - c.float()
+    distance = torch.copysign(distance, sum_diff)
 
     target_norm = (1 - alpha / 2) * a_norm + (alpha / 2) * b_norm
     return c + distance / torch.linalg.norm(distance) * target_norm
