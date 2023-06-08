@@ -97,6 +97,7 @@ def top_k_tensor_sum(
     a_flat = torch.flatten(a)
     a_dist = torch.msort(a_flat)
     b_indices = torch.argsort(torch.flatten(b), stable=True)
+    redist_indices = torch.argsort(b_indices)
 
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
@@ -110,8 +111,6 @@ def top_k_tensor_sum(
 
     start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(start_top_k)))
     end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(end_top_k)))
-
-    redist_indices = torch.argsort(b_indices)
     indices_mask = (start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_top_k)
     if invert_mask:
         indices_mask = ~indices_mask
