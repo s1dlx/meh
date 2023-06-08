@@ -70,7 +70,6 @@ def euclidean_add_difference(
 ) -> Tensor:
     a_diff = a.float() - c.float()
     b_diff = b.float() - c.float()
-
     a_diff /= torch.linalg.norm(a_diff)
     b_diff /= torch.linalg.norm(b_diff)
 
