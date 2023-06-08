@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch import Tensor
 
@@ -94,11 +96,18 @@ def multiply_difference(
 def top_k_tensor_sum(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_flat = torch.flatten(a)
+    a_flat = torch.flatten(a).cuda()
     a_dist = torch.msort(a_flat)
-    b_indices = torch.argsort(torch.flatten(b), stable=True)
+    b_indices = torch.argsort(torch.flatten(b).cuda(), stable=True)
     redist_indices = torch.argsort(b_indices)
 
+    alpha = min(max(alpha, -1), 1)
+    if alpha < 0:
+        beta += alpha
+        alpha = -alpha
+    if beta < 0:
+        beta = 1 - beta
+        beta = math.fmod(beta, 1.0)
     a_numel = torch.numel(a)
     if alpha + beta <= 1:
         start_top_k = beta * a_numel
@@ -111,7 +120,7 @@ def top_k_tensor_sum(
 
     start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(start_top_k)))
     end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, int(end_top_k)))
-    indices_mask = (start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) < end_top_k)
+    indices_mask = (start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) <= end_top_k)
     if invert_mask:
         indices_mask = ~indices_mask
     indices_mask = torch.gather(indices_mask.float(), 0, redist_indices)
