@@ -49,6 +49,17 @@ def compute_weights(weights, base):
 @click.option(
     "-rbi", "--re_basin_iterations", "re_basin_iterations", type=int, default=1
 )
+@click.option(
+    "-d",
+    "--device",
+    "device",
+    type=click.Choice(
+        ["cpu", "cuda"],
+        case_sensitive=False,
+    ),
+    default="cpu",
+)
+@click.option("-pr", "--prune", "prune", is_flag=True)
 def main(
     model_a,
     model_b,
@@ -64,6 +75,8 @@ def main(
     base_beta,
     re_basin,
     re_basin_iterations,
+    device,
+    prune,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
@@ -85,6 +98,8 @@ def main(
         weights_clip,
         re_basin,
         re_basin_iterations,
+        device,
+        prune,
     )
 
     save_model(merged, output_path, output_format)
