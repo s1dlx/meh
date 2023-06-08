@@ -3,6 +3,7 @@ from torch import Tensor
 import math
 from typing import Tuple
 
+
 __all__ = [
     "weighted_sum",
     "weighted_subtraction",
