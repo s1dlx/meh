@@ -85,15 +85,12 @@ def euclidean_add_difference(
 
 
 def multiply_difference(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    difference = torch.abs((a - c) * (b - c))
-    try:
-        difference = torch.sqrt(difference)
-    except RuntimeError:
-        difference = torch.sqrt(difference.float()).half()
-    difference = torch.copysign(torch.sqrt(difference), a + b - 2 * c)
-    return c + alpha * difference
+    diff_a = torch.pow(torch.abs(a.float() - c), (1 - alpha))
+    diff_b = torch.pow(torch.abs(b.float() - c), alpha)
+    difference = torch.copysign(diff_a * diff_b, weighted_sum(a, b, beta) - c)
+    return c + difference.to(c.dtype)
 
 
 def top_k_tensor_sum(
