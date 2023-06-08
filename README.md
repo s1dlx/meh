@@ -30,7 +30,7 @@ Options:
   -a, --model_a TEXT
   -b, --model_b TEXT
   -c, --model_c TEXT
-  -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum|similarity_add_difference|transmogrify_distribution|multiply_difference|distribution_crossover|euclidean_add_difference]
+  -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum|similarity_add_difference|transmogrify_distribution|multiply_difference|distribution_crossover|euclidean_add_difference|ties_add_difference]
   -wc, --weights_clip
   -p, --precision INTEGER
   -o, --output_path TEXT
@@ -41,14 +41,18 @@ Options:
   -bb, --base_beta FLOAT
   -rb, --re_basin
   -rbi, --re_basin_iterations INTEGER
+  -d, --device [cpu|cuda]
+  -pr, --prune
   --help                          Show this message and exit.
 ```
 
 ## Features
 
-- weights matching
+- gpu merging
+- prune model before merging (and un-prune at the end)
+- weights matching aka re-basin
 - weights clipping
 - registered pypi package
 - block merge
-- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `similarity_add_difference`, `transmogrify_distribution`, `distribution_crossover`, `multiply_difference`, `euclidean_add_difference`
+- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `similarity_add_difference`, `transmogrify_distribution`, `distribution_crossover`, `multiply_difference`, `euclidean_add_difference`, `ties_add_difference`
 - `fp16` and `fp32`
