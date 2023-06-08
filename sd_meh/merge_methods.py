@@ -127,7 +127,7 @@ def ratio_to_region(width: float, offset: float, n: int) -> Tuple[int, int, bool
     if width < 0:
         offset += width
         width = -width
-    width = min(max(width, 0), 1)
+    width = min(width, 1)
 
     if offset < 0:
         offset = 1 + offset - int(offset)
