@@ -84,8 +84,7 @@ def multiply_difference(
 ) -> Tensor:
     diff_a = torch.abs(a.float() - c) ** (1 - alpha)
     diff_b = torch.abs(b.float() - c) ** alpha
-    difference = diff_a * diff_b
-    difference = torch.copysign(difference, weighted_sum(a, b, beta) - c)
+    difference = torch.copysign(diff_a * diff_b, weighted_sum(a, b, beta) - c)
     return c + difference.to(c.dtype)
 
 
