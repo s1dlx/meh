@@ -84,7 +84,7 @@ def multiply_difference(
 ) -> Tensor:
     difference = torch.abs(a.float() - c) ** (1-alpha) * torch.abs(b.float() - c) ** alpha
     difference = torch.copysign(difference, weighted_sum(a, b, beta) - c)
-    return c + difference.to(a.dtype)
+    return c + difference.to(c.dtype)
 
 
 def transmogrify_distribution(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
