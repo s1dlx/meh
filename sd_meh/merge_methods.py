@@ -1,4 +1,5 @@
 import math
+from typing import Tuple
 
 import torch
 from torch import Tensor
@@ -101,33 +102,47 @@ def top_k_tensor_sum(
     b_indices = torch.argsort(torch.flatten(b).cuda(), stable=True)
     redist_indices = torch.argsort(b_indices)
 
-    if alpha < 0:
-        beta += alpha
-        alpha = -alpha
-    alpha = min(max(alpha, 0), 1)
-    if beta < 0:
-        beta = 1 - beta
-    beta = math.fmod(beta, 1.0)
-    a_numel = torch.numel(a)
-    if alpha + beta <= 1:
-        start_top_k = beta * a_numel
-        end_top_k = (alpha + beta) * a_numel
-        invert_mask = False
-    else:
-        start_top_k = (alpha + beta - 1) * a_numel
-        end_top_k = beta * a_numel
-        invert_mask = True
+    start_i, end_i, region_is_inverted = ratio_to_region(alpha, beta, torch.numel(a))
+    start_top_k = kth_abs_value(a_dist, start_i)
+    end_top_k = kth_abs_value(a_dist, end_i)
 
-    start_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, round(start_top_k)))
-    end_top_k, _ = torch.kthvalue(torch.abs(a_dist).float(), max(1, round(end_top_k)))
-    indices_mask = (start_top_k <= torch.abs(a_dist)) & (torch.abs(a_dist) <= end_top_k)
-    if invert_mask:
+    indices_mask = (start_top_k < torch.abs(a_dist)) & (torch.abs(a_dist) <= end_top_k)
+    if region_is_inverted:
         indices_mask = ~indices_mask
     indices_mask = torch.gather(indices_mask.float(), 0, redist_indices)
 
     a_redist = torch.gather(a_dist, 0, redist_indices)
     a_redist = (1 - indices_mask) * a_flat + indices_mask * a_redist
     return a_redist.reshape_as(a)
+
+
+def kth_abs_value(a: Tensor, k: int) -> Tensor:
+    if k <= 0:
+        return torch.tensor(-1, device=a.device)
+    else:
+        return torch.kthvalue(torch.abs(a), k)[0]
+
+
+def ratio_to_region(width: float, offset: float, n: int) -> Tuple[int, int, bool]:
+    if width < 0:
+        offset += width
+        width = -width
+    width = min(max(width, 0), 1)
+
+    if offset < 0:
+        offset = 1 + offset - int(offset)
+    offset = math.fmod(offset, 1.0)
+
+    if width + offset <= 1:
+        inverted = False
+        start = offset * n
+        end = (width + offset) * n
+    else:
+        inverted = True
+        start = (width + offset - 1) * n
+        end = offset * n
+
+    return round(start), round(end), inverted
 
 
 def similarity_add_difference(
