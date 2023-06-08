@@ -97,9 +97,9 @@ def multiply_difference(
 def top_k_tensor_sum(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    a_flat = torch.flatten(a).cuda()
+    a_flat = torch.flatten(a)
     a_dist = torch.msort(a_flat)
-    b_indices = torch.argsort(torch.flatten(b).cuda(), stable=True)
+    b_indices = torch.argsort(torch.flatten(b), stable=True)
     redist_indices = torch.argsort(b_indices)
 
     start_i, end_i, region_is_inverted = ratio_to_region(alpha, beta, torch.numel(a))
