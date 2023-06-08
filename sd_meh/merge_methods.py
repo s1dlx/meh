@@ -70,7 +70,7 @@ def euclidean_add_difference(
 ) -> Tensor:
     distance = (a.float() - c) ** 2 + alpha * (b.float() - c) ** 2
     distance = torch.sqrt(distance)
-    distance = torch.copysign(distance, a.float() - c + alpha * (b - c))
+    distance = torch.copysign(distance, a.float() - c + alpha * (b.float() - c))
 
     a_norm = torch.linalg.norm(a.float() - c)
     b_norm = torch.linalg.norm(b.float() - c)
