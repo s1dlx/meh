@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from lora import convert_lora_to_weights
 import safetensors
 import torch
+from tensordict import TensorDict
 
 
 @dataclass
@@ -20,7 +21,7 @@ class SDModel:
         else:
             ckpt = torch.load(self.model_path, map_location=self.device)
 
-        return get_state_dict_from_checkpoint(ckpt)
+        return TensorDict.from_dict(get_state_dict_from_checkpoint(ckpt))
 
 
 # TODO: tidy up
