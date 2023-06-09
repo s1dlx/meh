@@ -46,7 +46,9 @@ NAI_KEYS = {
 def fix_clip(model: Dict) -> Dict:
     if KEY_POSITION_IDS in model.keys():
         model[KEY_POSITION_IDS] = torch.tensor(
-            [list(range(MAX_TOKENS))], dtype=torch.int64
+            [list(range(MAX_TOKENS))],
+            dtype=torch.int64,
+            device=model[KEY_POSITION_IDS].device,
         )
 
     return model
