@@ -119,7 +119,7 @@ def kth_abs_value(a: Tensor, k: int) -> Tensor:
     if k <= 0:
         return torch.tensor(-1, device=a.device)
     else:
-        return torch.kthvalue(torch.abs(a), k)[0]
+        return torch.kthvalue(torch.abs(a.float()), k)[0]
 
 
 def ratio_to_region(width: float, offset: float, n: int) -> Tuple[int, int, bool]:
