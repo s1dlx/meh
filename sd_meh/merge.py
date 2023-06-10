@@ -350,8 +350,7 @@ def merge_key(
         except AttributeError as e:
             raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
-        merge_args = get_merge_method_args(current_bases, thetas, key)
-        merged_key = merge_method(**merge_args)
+        merged_key = merge_method(current_bases, thetas, key)
 
         if weights_clip:
             t0 = thetas["model_a"][key]
@@ -381,19 +380,6 @@ def merge_key_context(*args, **kwargs):
     finally:
         if result is not None:
             del result
-
-
-def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
-    merge_method_args = {
-        "a": thetas["model_a"][key],
-        "b": thetas["model_b"][key],
-        **current_bases,
-    }
-
-    if "model_c" in thetas:
-        merge_method_args["c"] = thetas["model_c"][key]
-
-    return merge_method_args
 
 
 def save_model(model, output_file, file_format) -> None:

@@ -2,31 +2,18 @@ import torch
 from torch import Tensor
 import math
 from typing import Tuple
-
-
-__all__ = [
-    "weighted_sum",
-    "weighted_subtraction",
-    "tensor_sum",
-    "add_difference",
-    "sum_twice",
-    "triple_sum",
-    "euclidean_add_difference",
-    "multiply_difference",
-    "top_k_tensor_sum",
-    "similarity_add_difference",
-    "distribution_crossover",
-    "ties_add_difference",
-]
+from merge_method import merge_method, MergeSpace
 
 
 EPSILON = 1e-10  # Define a small constant EPSILON to prevent division by zero
 
 
+@merge_method({MergeSpace.FULL, MergeSpace.DIFFERENCE})
 def weighted_sum(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
     return (1 - alpha) * a + alpha * b
 
 
+@merge_method({MergeSpace.FULL, MergeSpace.DIFFERENCE})
 def weighted_subtraction(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
@@ -37,6 +24,7 @@ def weighted_subtraction(
     return (a - alpha * beta * b) / (1 - alpha * beta)
 
 
+@merge_method({MergeSpace.FULL, MergeSpace.DIFFERENCE})
 def tensor_sum(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Tensor:
     if alpha + beta <= 1:
         tt = a.clone()
@@ -51,48 +39,54 @@ def tensor_sum(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Ten
     return tt
 
 
-def add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
-    return a + alpha * (b - c)
+@merge_method(MergeSpace.DIFFERENCE)
+def add_difference(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
+    return a + alpha * b
 
 
+@merge_method({MergeSpace.FULL, MergeSpace.DIFFERENCE})
 def sum_twice(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - beta) * ((1 - alpha) * a + alpha * b) + beta * c
 
 
+@merge_method({MergeSpace.FULL, MergeSpace.DIFFERENCE})
 def triple_sum(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
 
 
+@merge_method(MergeSpace.DIFFERENCE)
 def euclidean_add_difference(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+    a: Tensor, b: Tensor, alpha: float, **kwargs
 ) -> Tensor:
-    a_diff = a.float() - c.float()
-    b_diff = b.float() - c.float()
+    a_diff = a.float()
+    b_diff = b.float()
     a_diff /= torch.linalg.norm(a_diff)
     b_diff /= torch.linalg.norm(b_diff)
 
     distance = (1 - alpha) * a_diff**2 + alpha * b_diff**2
     distance = torch.sqrt(distance)
-    sum_diff = weighted_sum(a.float(), b.float(), alpha) - c.float()
+    sum_diff = weighted_sum(a.float(), b.float(), alpha)
     distance = torch.copysign(distance, sum_diff)
 
     target_norm = torch.linalg.norm(sum_diff)
-    return c + distance / torch.linalg.norm(distance) * target_norm
+    return distance / torch.linalg.norm(distance) * target_norm
 
 
+@merge_method(MergeSpace.DIFFERENCE)
 def multiply_difference(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+    a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
-    diff_a = torch.pow(torch.abs(a.float() - c), (1 - alpha))
-    diff_b = torch.pow(torch.abs(b.float() - c), alpha)
-    difference = torch.copysign(diff_a * diff_b, weighted_sum(a, b, beta) - c)
-    return c + difference.to(c.dtype)
+    diff_a = torch.pow(torch.abs(a.float()), (1 - alpha))
+    diff_b = torch.pow(torch.abs(b.float()), alpha)
+    difference = torch.copysign(diff_a * diff_b, weighted_sum(a, b, beta))
+    return difference
 
 
+@merge_method(MergeSpace.FULL)
 def top_k_tensor_sum(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
@@ -144,30 +138,28 @@ def ratio_to_region(width: float, offset: float, n: int) -> Tuple[int, int, bool
     return round(start), round(end), inverted
 
 
+@merge_method(MergeSpace.DIFFERENCE)
 def similarity_add_difference(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+    a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     threshold = torch.maximum(torch.abs(a), torch.abs(b))
     similarity = ((a * b / threshold**2) + 1) / 2
     similarity = torch.nan_to_num(similarity * beta, nan=beta)
 
-    ab_diff = a + alpha * (b - c)
-    ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
+    ab_diff = add_difference(a, b, alpha)
+    ab_sum = weighted_sum(a, b, alpha / 2)
     return (1 - similarity) * ab_diff + similarity * ab_sum
 
 
+@merge_method(MergeSpace.DISTRIBUTION)
 def distribution_crossover(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+    a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ):
     if a.shape == ():
         return alpha * a + (1 - alpha) * b
 
-    c_indices = torch.argsort(torch.flatten(c))
-    a_dist = torch.gather(torch.flatten(a), 0, c_indices)
-    b_dist = torch.gather(torch.flatten(b), 0, c_indices)
-
-    a_dft = torch.fft.rfft(a_dist.float())
-    b_dft = torch.fft.rfft(b_dist.float())
+    a_dft = torch.fft.rfft(a.float())
+    b_dft = torch.fft.rfft(a.float())
 
     dft_filter = torch.arange(0, torch.numel(a_dft), device=a_dft.device).float()
     dft_filter /= torch.numel(a_dft)
@@ -178,30 +170,30 @@ def distribution_crossover(
         dft_filter = (dft_filter >= alpha).float()
 
     x_dft = (1 - dft_filter) * a_dft + dft_filter * b_dft
-    x_dist = torch.fft.irfft(x_dft, a_dist.shape[0])
-    x_values = torch.gather(x_dist, 0, torch.argsort(c_indices))
-    return x_values.reshape_as(a)
+    x_dist = torch.fft.irfft(x_dft, a.shape[0])
+    return x_dist
 
 
+@merge_method(MergeSpace.DIFFERENCE)
 def ties_add_difference(
-    a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
+    a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     deltas = []
     signs = []
     for m in [a, b]:
-        deltas.append(filter_top_k(m - c, beta))
+        deltas.append(filter_top_k(m, beta))
         signs.append(torch.sign(deltas[-1]))
 
     signs = torch.stack(signs, dim=0)
     final_sign = torch.sign(torch.sum(signs, dim=0))
     delta_filters = (signs == final_sign).float()
 
-    res = torch.zeros_like(c, device=c.device)
+    res = torch.zeros_like(a, device=a.device)
     for delta_filter, delta in zip(delta_filters, deltas):
         res += delta_filter * delta
 
     param_count = torch.sum(delta_filters, dim=0)
-    return c + alpha * torch.nan_to_num(res / param_count)
+    return alpha * torch.nan_to_num(res / param_count)
 
 
 def filter_top_k(a: Tensor, k: float):
