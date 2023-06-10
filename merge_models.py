@@ -59,6 +59,16 @@ def compute_weights(weights, base):
     ),
     default="cpu",
 )
+@click.option(
+    "-wd",
+    "--work_device",
+    "work_device",
+    type=click.Choice(
+        ["cpu", "cuda"],
+        case_sensitive=False,
+    ),
+    default="cpu",
+)
 @click.option("-pr", "--prune", "prune", is_flag=True)
 def main(
     model_a,
@@ -76,6 +86,7 @@ def main(
     re_basin,
     re_basin_iterations,
     device,
+    work_device,
     prune,
 ):
     models = {"model_a": model_a, "model_b": model_b}
@@ -99,6 +110,7 @@ def main(
         re_basin,
         re_basin_iterations,
         device,
+        work_device,
         prune,
     )
 
