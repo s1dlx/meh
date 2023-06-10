@@ -219,7 +219,7 @@ def simple_merge(
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
         with ThreadPoolExecutor(max_workers=threads) as executor:
             for key in thetas["model_a"].keys():
-                futures.append(executor.submit(
+                future = executor.submit(
                     simple_merge_key,
                     progress,
                     key,
@@ -229,7 +229,8 @@ def simple_merge(
                     merge_mode,
                     precision,
                     weights_clip,
-                ))
+                )
+                futures.append(future)
 
         for res in futures:
             res.result()
@@ -321,9 +322,7 @@ def rebasin_merge(
 
 
 def simple_merge_key(progress, key, thetas, *args, **kwargs):
-    with merge_key_context(
-        key, thetas, *args, **kwargs
-    ) as result:
+    with merge_key_context(key, thetas, *args, **kwargs) as result:
         if result is not None:
             thetas["model_a"].update({key: result.detach().clone()})
 
