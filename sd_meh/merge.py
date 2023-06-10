@@ -1,6 +1,7 @@
 import gc
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -209,13 +210,26 @@ def simple_merge(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
+    jobs: int = 10,
 ) -> Dict:
-    for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        with merge_key_context(
-            key, thetas, weights, bases, merge_mode, precision, weights_clip
-        ) as result:
-            if result is not None:
-                thetas["model_a"].update({key: result.detach().clone()})
+    futures = []
+    with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
+        with ThreadPoolExecutor(max_workers=jobs) as executor:
+            for key in thetas["model_a"].keys():
+                futures.append(executor.submit(
+                    simple_merge_key,
+                    progress,
+                    key,
+                    thetas,
+                    weights,
+                    bases,
+                    merge_mode,
+                    precision,
+                    weights_clip,
+                ))
+
+        for res in futures:
+            res.result()
 
     log_vram("after stage 1")
 
@@ -241,6 +255,7 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
+    jobs: int = 1,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -256,7 +271,7 @@ def rebasin_merge(
 
         # normal block merge we already know and love
         thetas["model_a"] = simple_merge(
-            thetas, new_weights, new_bases, merge_mode, precision, weights_clip
+            thetas, new_weights, new_bases, merge_mode, precision, weights_clip, jobs
         )
 
         log_vram("simple merge done")
@@ -300,6 +315,16 @@ def rebasin_merge(
         log_vram("model a updated")
 
     return thetas["model_a"]
+
+
+def simple_merge_key(progress, key, thetas, *args, **kwargs):
+    with merge_key_context(
+        key, thetas, *args, **kwargs
+    ) as result:
+        if result is not None:
+            thetas["model_a"].update({key: result.detach().clone()})
+
+        progress.update()
 
 
 def merge_key(
