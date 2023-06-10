@@ -43,6 +43,7 @@ Options:
   -rbi, --re_basin_iterations INTEGER
   -d, --device [cpu|cuda]
   -pr, --prune
+  -j, --threads INTEGER
   --help                          Show this message and exit.
 ```
 
