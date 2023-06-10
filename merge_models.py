@@ -60,6 +60,13 @@ def compute_weights(weights, base):
     default="cpu",
 )
 @click.option("-pr", "--prune", "prune", is_flag=True)
+@click.option(
+    "-j",
+    "--threads",
+    "threads",
+    type=int,
+    default=1,
+)
 def main(
     model_a,
     model_b,
@@ -77,6 +84,7 @@ def main(
     re_basin_iterations,
     device,
     prune,
+    threads,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
@@ -100,6 +108,7 @@ def main(
         re_basin_iterations,
         device,
         prune,
+        threads,
     )
 
     save_model(merged, output_path, output_format)

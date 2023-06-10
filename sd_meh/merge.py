@@ -137,6 +137,7 @@ def merge_models(
     iterations: int = 1,
     device: str = "cpu",
     prune: bool = False,
+    threads: int = 1,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
@@ -150,6 +151,7 @@ def merge_models(
             weights_clip=False,
             iterations=iterations,
             device=device,
+            threads=threads,
         )
         # clip only after the last re-basin iteration
         if weights_clip:
@@ -162,6 +164,7 @@ def merge_models(
             merge_mode,
             precision=precision,
             weights_clip=weights_clip,
+            threads=threads,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -210,11 +213,11 @@ def simple_merge(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
-    jobs: int = 10,
+    threads: int = 10,
 ) -> Dict:
     futures = []
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
-        with ThreadPoolExecutor(max_workers=jobs) as executor:
+        with ThreadPoolExecutor(max_workers=threads) as executor:
             for key in thetas["model_a"].keys():
                 futures.append(executor.submit(
                     simple_merge_key,
@@ -255,7 +258,7 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
-    jobs: int = 1,
+    threads: int = 1,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -271,7 +274,7 @@ def rebasin_merge(
 
         # normal block merge we already know and love
         thetas["model_a"] = simple_merge(
-            thetas, new_weights, new_bases, merge_mode, precision, weights_clip, jobs
+            thetas, new_weights, new_bases, merge_mode, precision, weights_clip, threads
         )
 
         log_vram("simple merge done")
