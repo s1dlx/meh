@@ -67,7 +67,7 @@ def compute_weights(weights, base):
         ["cpu", "cuda"],
         case_sensitive=False,
     ),
-    default="cpu",
+    default=None,
 )
 @click.option("-pr", "--prune", "prune", is_flag=True)
 def main(

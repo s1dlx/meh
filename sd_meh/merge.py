@@ -135,7 +135,7 @@ def merge_models(
     re_basin: bool = False,
     iterations: int = 1,
     device: str = "cpu",
-    work_device: str = "cpu",
+    work_device: Optional[str] = None,
     prune: bool = False,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
@@ -214,8 +214,11 @@ def simple_merge(
     precision: int = 16,
     weights_clip: bool = False,
     device: str = "cpu",
-    work_device: str = "cpu",
+    work_device: Optional[str] = None,
 ) -> Dict:
+    if work_device is None:
+        work_device = device
+
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         with merge_key_context(
             key,
@@ -255,7 +258,7 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
-    work_device="cpu",
+    work_device=None,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -333,7 +336,7 @@ def merge_key(
     precision: int = 16,
     weights_clip: bool = False,
     storage_device: str = "cpu",
-    work_device: str = "cpu",
+    work_device: Optional[str] = None,
 ) -> Optional[Tuple[str, Dict]]:
     if KEY_POSITION_IDS in key:
         return
