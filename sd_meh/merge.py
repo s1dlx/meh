@@ -213,7 +213,7 @@ def simple_merge(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
-    threads: int = 10,
+    threads: int = 1,
 ) -> Dict:
     futures = []
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
