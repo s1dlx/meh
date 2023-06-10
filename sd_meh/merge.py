@@ -218,7 +218,15 @@ def simple_merge(
 ) -> Dict:
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         with merge_key_context(
-            key, thetas, weights, bases, merge_mode, precision, weights_clip, device, work_device
+            key,
+            thetas,
+            weights,
+            bases,
+            merge_mode,
+            precision,
+            weights_clip,
+            device,
+            work_device,
         ) as result:
             if result is not None:
                 thetas["model_a"].update({key: result.detach().clone()})
