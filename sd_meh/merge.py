@@ -216,9 +216,6 @@ def simple_merge(
     device: str = "cpu",
     work_device: Optional[str] = None,
 ) -> Dict:
-    if work_device is None:
-        work_device = device
-
     for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
         with merge_key_context(
             key,
@@ -338,6 +335,9 @@ def merge_key(
     storage_device: str = "cpu",
     work_device: Optional[str] = None,
 ) -> Optional[Tuple[str, Dict]]:
+    if work_device is None:
+        work_device = storage_device
+
     if KEY_POSITION_IDS in key:
         return
 
