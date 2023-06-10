@@ -42,6 +42,7 @@ Options:
   -rb, --re_basin
   -rbi, --re_basin_iterations INTEGER
   -d, --device [cpu|cuda]
+  -wd, --work-device [cpu|cuda]
   -pr, --prune
   --help                          Show this message and exit.
 ```
