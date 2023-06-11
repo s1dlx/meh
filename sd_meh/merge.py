@@ -1,6 +1,7 @@
 import gc
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -137,6 +138,7 @@ def merge_models(
     device: str = "cpu",
     work_device: Optional[str] = None,
     prune: bool = False,
+    threads: int = 1,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
@@ -151,6 +153,7 @@ def merge_models(
             iterations=iterations,
             device=device,
             work_device=work_device,
+            threads=threads,
         )
         # clip only after the last re-basin iteration
         if weights_clip:
@@ -165,6 +168,7 @@ def merge_models(
             weights_clip=weights_clip,
             device=device,
             work_device=work_device,
+            threads=threads,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -215,21 +219,27 @@ def simple_merge(
     weights_clip: bool = False,
     device: str = "cpu",
     work_device: Optional[str] = None,
+    threads: int = 1,
 ) -> Dict:
-    for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        with merge_key_context(
-            key,
-            thetas,
-            weights,
-            bases,
-            merge_mode,
-            precision,
-            weights_clip,
-            device,
-            work_device,
-        ) as result:
-            if result is not None:
-                thetas["model_a"].update({key: result.detach().clone()})
+    futures = []
+    with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            for key in thetas["model_a"].keys():
+                future = executor.submit(
+                    simple_merge_key,
+                    progress,
+                    key,
+                    thetas,
+                    weights,
+                    bases,
+                    merge_mode,
+                    precision,
+                    weights_clip,
+                )
+                futures.append(future)
+
+        for res in futures:
+            res.result()
 
     log_vram("after stage 1")
 
@@ -256,6 +266,7 @@ def rebasin_merge(
     iterations: int = 1,
     device="cpu",
     work_device=None,
+    threads: int = 1,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -279,6 +290,7 @@ def rebasin_merge(
             weights_clip,
             device,
             work_device,
+            threads,
         )
 
         log_vram("simple merge done")
@@ -322,6 +334,14 @@ def rebasin_merge(
         log_vram("model a updated")
 
     return thetas["model_a"]
+
+
+def simple_merge_key(progress, key, thetas, *args, **kwargs):
+    with merge_key_context(key, thetas, *args, **kwargs) as result:
+        if result is not None:
+            thetas["model_a"].update({key: result.detach().clone()})
+
+        progress.update()
 
 
 def merge_key(

@@ -44,6 +44,7 @@ Options:
   -d, --device [cpu|cuda]
   -wd, --work-device [cpu|cuda]
   -pr, --prune
+  -j, --threads INTEGER
   --help                          Show this message and exit.
 ```
 
