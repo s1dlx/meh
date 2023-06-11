@@ -235,6 +235,8 @@ def simple_merge(
                     merge_mode,
                     precision,
                     weights_clip,
+                    device,
+                    work_device,
                 )
                 futures.append(future)
 
