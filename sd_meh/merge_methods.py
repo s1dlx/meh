@@ -72,8 +72,8 @@ def euclidean_add_difference(
 ) -> Tensor:
     a_diff = a.float() - c.float()
     b_diff = b.float() - c.float()
-    a_diff /= torch.linalg.norm(a_diff)
-    b_diff /= torch.linalg.norm(b_diff)
+    a_diff = torch.nan_to_num(a_diff / torch.linalg.norm(a_diff))
+    b_diff = torch.nan_to_num(b_diff / torch.linalg.norm(b_diff))
 
     distance = (1 - alpha) * a_diff**2 + alpha * b_diff**2
     distance = torch.sqrt(distance)
@@ -119,7 +119,7 @@ def kth_abs_value(a: Tensor, k: int) -> Tensor:
     if k <= 0:
         return torch.tensor(-1, device=a.device)
     else:
-        return torch.kthvalue(torch.abs(a), k)[0]
+        return torch.kthvalue(torch.abs(a.float()), k)[0]
 
 
 def ratio_to_region(width: float, offset: float, n: int) -> Tuple[int, int, bool]:
