@@ -324,7 +324,7 @@ def rebasin_merge(
 def simple_merge_key(progress, key, thetas, *args, **kwargs):
     with merge_key_context(key, thetas, *args, **kwargs) as result:
         if result is not None:
-            thetas["model_a"][key] = result.detach().clone()
+            thetas["model_a"].update({key: result.detach().clone()})
 
         progress.update()
 
