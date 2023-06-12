@@ -4,6 +4,7 @@ import click
 
 from sd_meh import merge_methods
 from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
+from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 
 merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
 beta_methods = [
@@ -60,6 +61,20 @@ def compute_weights(weights, base):
     default="cpu",
 )
 @click.option("-pr", "--prune", "prune", is_flag=True)
+@click.option(
+    "-bwpa",
+    "--block_weights_preset_alpha",
+    "block_weights_preset_alpha",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-bwpb",
+    "--block_weights_preset_beta",
+    "block_weights_preset_beta",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
 def main(
     model_a,
     model_b,
@@ -77,15 +92,21 @@ def main(
     re_basin_iterations,
     device,
     prune,
+    block_weights_preset_alpha,
+    block_weights_preset_beta,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
         models["model_c"] = model_c
 
+    if block_weights_preset_alpha:
+        base_alpha, *weights_alpha = BLOCK_WEIGHTS_PRESETS[block_weights_preset_alpha]
     bases = {"alpha": base_alpha}
     weights = {"alpha": compute_weights(weights_alpha, base_alpha)}
 
     if merge_mode in beta_methods:
+        if block_weights_preset_beta:
+            base_beta, *weights_beta = BLOCK_WEIGHTS_PRESETS[block_weights_preset_beta]
         weights["beta"] = compute_weights(weights_beta, base_beta)
         bases["beta"] = base_beta
 
