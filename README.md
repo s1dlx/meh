@@ -20,41 +20,9 @@ from sd_meh.merge import merge_models
 merged_model = merge_models(models, weights, bases, merge_mode, precision)
 ```
 
-You can have a look at the provided `merge_models.py` for an example on how to use the function.
+You can have a look at the provided `merge_models.py` cli for an example on how to use the function. Run `python3 merge_models.py --help` for a list of the available arguments.
 
+## Changelog
 
-```
-Usage: merge_models.py [OPTIONS]
-
-Options:
-  -a, --model_a TEXT
-  -b, --model_b TEXT
-  -c, --model_c TEXT
-  -m, --merging_method [weighted_sum|add_difference|weighted_subtraction|sum_twice|triple_sum|tensor_sum|similarity_add_difference|top_k_tensor_sum|multiply_difference|distribution_crossover|euclidean_add_difference|ties_add_difference]
-  -wc, --weights_clip
-  -p, --precision INTEGER
-  -o, --output_path TEXT
-  -f, --output_format [safetensors|ckpt]
-  -wa, --weights_alpha TEXT
-  -ba, --base_alpha FLOAT
-  -wb, --weights_beta TEXT
-  -bb, --base_beta FLOAT
-  -rb, --re_basin
-  -rbi, --re_basin_iterations INTEGER
-  -d, --device [cpu|cuda]
-  -wd, --work-device [cpu|cuda]
-  -pr, --prune
-  -j, --threads INTEGER
-  --help                          Show this message and exit.
-```
-
-## Features
-
-- gpu merging
-- prune model before merging (and un-prune at the end)
-- weights matching aka re-basin
-- weights clipping
-- registered pypi package
-- block merge
-- merging methods: `weighted_sum`, `add_difference`, `weighted_subtraction`, `sum_twice`, `triple_sum`, `tensor_sum`, `similarity_add_difference`, `top_k_tensor_sum`, `distribution_crossover`, `multiply_difference`, `euclidean_add_difference`, `ties_add_difference`
-- `fp16` and `fp32`
+### 0.7.0
+- add `-bwpa, --block_weights_preset_alpha` and `-bwpb, --block_weights_preset_beta` to use pre-defined merging weights. Have a look at the [wiki](https://github.com/s1dlx/meh/wiki/Presets) for all the presets.
