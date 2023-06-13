@@ -84,6 +84,7 @@ def compute_weights(weights, base):
     "block_weights_preset_beta",
     type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
     default=None,
+)
 @click.option(
     "-j",
     "--threads",
