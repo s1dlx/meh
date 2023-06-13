@@ -60,6 +60,16 @@ def compute_weights(weights, base):
     ),
     default="cpu",
 )
+@click.option(
+    "-wd",
+    "--work_device",
+    "work_device",
+    type=click.Choice(
+        ["cpu", "cuda"],
+        case_sensitive=False,
+    ),
+    default=None,
+)
 @click.option("-pr", "--prune", "prune", is_flag=True)
 @click.option(
     "-bwpa",
@@ -74,6 +84,12 @@ def compute_weights(weights, base):
     "block_weights_preset_beta",
     type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
     default=None,
+@click.option(
+    "-j",
+    "--threads",
+    "threads",
+    type=int,
+    default=1,
 )
 def main(
     model_a,
@@ -91,9 +107,11 @@ def main(
     re_basin,
     re_basin_iterations,
     device,
+    work_device,
     prune,
     block_weights_preset_alpha,
     block_weights_preset_beta,
+    threads,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
@@ -120,7 +138,9 @@ def main(
         re_basin,
         re_basin_iterations,
         device,
+        work_device,
         prune,
+        threads,
     )
 
     save_model(merged, output_path, output_format)
