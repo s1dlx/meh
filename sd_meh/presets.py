@@ -40,25 +40,3 @@ BLOCK_WEIGHTS_PRESETS = {
     "ALL_B": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 }
 # fmt: on
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-fig = plt.figure(1)
-fig.clf()
-
-for i, (k, v) in enumerate(list(BLOCK_WEIGHTS_PRESETS.items())[:-2]):
-    ax = fig.add_subplot(6, 6, i + 1)
-    ax.plot(v[1:])
-    if i % 6 > 0:
-        ax.set_yticks([])
-    if i < 6 * 5:
-        ax.set_xticks([])
-    else:
-        ax.set_xticks([0, 12, 24], ["in", "mid", "out"])
-
-    sns.despine(left=i % 6 > 0, bottom=i < 6 * 5, ax=ax, offset=10)
-
-    ax.set_title(k, fontsize=8)
-    ax.set_ylim(-0.1, 1.1)
-plt.tight_layout()
