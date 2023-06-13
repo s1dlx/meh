@@ -26,3 +26,6 @@ You can have a look at the provided `merge_models.py` cli for an example on how 
 
 ### 0.7.0
 - add `-bwpa, --block_weights_preset_alpha` and `-bwpb, --block_weights_preset_beta` to use pre-defined merging weights. Have a look at the [wiki](https://github.com/s1dlx/meh/wiki/Presets) for all the presets.
+- add `-wd, --work_device`
+- add `-pr, --prune`
+- add `-j, --threads`
