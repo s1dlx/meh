@@ -1,0 +1,19 @@
+name: Python 🐍 Auto Version Tag
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Version tag
+        uses: samamorgan/action-autotag-python@master
+
+        with:
+          path: sd_meh/__init__.py
+          variable: __version__
+          github_token: ${{ secrets.AUTOTAG }}
