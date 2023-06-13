@@ -1,6 +1,7 @@
 import gc
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -135,7 +136,9 @@ def merge_models(
     re_basin: bool = False,
     iterations: int = 1,
     device: str = "cpu",
+    work_device: Optional[str] = None,
     prune: bool = False,
+    threads: int = 1,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
@@ -149,6 +152,8 @@ def merge_models(
             weights_clip=False,
             iterations=iterations,
             device=device,
+            work_device=work_device,
+            threads=threads,
         )
         # clip only after the last re-basin iteration
         if weights_clip:
@@ -161,6 +166,9 @@ def merge_models(
             merge_mode,
             precision=precision,
             weights_clip=weights_clip,
+            device=device,
+            work_device=work_device,
+            threads=threads,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -209,13 +217,31 @@ def simple_merge(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
+    device: str = "cpu",
+    work_device: Optional[str] = None,
+    threads: int = 1,
 ) -> Dict:
-    for key in tqdm(thetas["model_a"].keys(), desc="stage 1"):
-        with merge_key_context(
-            key, thetas, weights, bases, merge_mode, precision, weights_clip
-        ) as result:
-            if result is not None:
-                thetas["model_a"].update({key: result.detach().clone()})
+    futures = []
+    with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            for key in thetas["model_a"].keys():
+                future = executor.submit(
+                    simple_merge_key,
+                    progress,
+                    key,
+                    thetas,
+                    weights,
+                    bases,
+                    merge_mode,
+                    precision,
+                    weights_clip,
+                    device,
+                    work_device,
+                )
+                futures.append(future)
+
+        for res in futures:
+            res.result()
 
     log_vram("after stage 1")
 
@@ -241,6 +267,8 @@ def rebasin_merge(
     weights_clip: bool = False,
     iterations: int = 1,
     device="cpu",
+    work_device=None,
+    threads: int = 1,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -256,7 +284,15 @@ def rebasin_merge(
 
         # normal block merge we already know and love
         thetas["model_a"] = simple_merge(
-            thetas, new_weights, new_bases, merge_mode, precision, weights_clip
+            thetas,
+            new_weights,
+            new_bases,
+            merge_mode,
+            precision,
+            weights_clip,
+            device,
+            work_device,
+            threads,
         )
 
         log_vram("simple merge done")
@@ -302,6 +338,14 @@ def rebasin_merge(
     return thetas["model_a"]
 
 
+def simple_merge_key(progress, key, thetas, *args, **kwargs):
+    with merge_key_context(key, thetas, *args, **kwargs) as result:
+        if result is not None:
+            thetas["model_a"].update({key: result.detach().clone()})
+
+        progress.update()
+
+
 def merge_key(
     key: str,
     thetas: Dict,
@@ -310,7 +354,12 @@ def merge_key(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
+    storage_device: str = "cpu",
+    work_device: Optional[str] = None,
 ) -> Optional[Tuple[str, Dict]]:
+    if work_device is None:
+        work_device = storage_device
+
     if KEY_POSITION_IDS in key:
         return
 
@@ -350,8 +399,8 @@ def merge_key(
         except AttributeError as e:
             raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
-        merge_args = get_merge_method_args(current_bases, thetas, key)
-        merged_key = merge_method(**merge_args)
+        merge_args = get_merge_method_args(current_bases, thetas, key, work_device)
+        merged_key = merge_method(**merge_args).to(storage_device)
 
         if weights_clip:
             t0 = thetas["model_a"][key]
@@ -383,15 +432,20 @@ def merge_key_context(*args, **kwargs):
             del result
 
 
-def get_merge_method_args(current_bases: Dict, thetas: Dict, key: str) -> Dict:
+def get_merge_method_args(
+    current_bases: Dict,
+    thetas: Dict,
+    key: str,
+    work_device: str,
+) -> Dict:
     merge_method_args = {
-        "a": thetas["model_a"][key],
-        "b": thetas["model_b"][key],
+        "a": thetas["model_a"][key].to(work_device),
+        "b": thetas["model_b"][key].to(work_device),
         **current_bases,
     }
 
     if "model_c" in thetas:
-        merge_method_args["c"] = thetas["model_c"][key]
+        merge_method_args["c"] = thetas["model_c"][key].to(work_device)
 
     return merge_method_args
 
