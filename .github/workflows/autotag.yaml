@@ -2,7 +2,7 @@ name: Python 🐍 Auto Version Tag
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   tag:
