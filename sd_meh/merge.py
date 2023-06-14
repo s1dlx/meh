@@ -423,9 +423,10 @@ def merge_key(
 
 def clip_weights(thetas, merged):
     for k, t0 in thetas["model_a"].items():
-        t1 = thetas["model_b"][k]
-        th = torch.maximum(torch.abs(t0), torch.abs(t1))
-        merged.update({k: torch.minimum(torch.maximum(merged[k], -th), th)})
+        if k in thetas['model_b'].keys():
+            t1 = thetas["model_b"][k]
+            th = torch.maximum(torch.abs(t0), torch.abs(t1))
+            merged.update({k: torch.minimum(torch.maximum(merged[k], -th), th)})
     return merged
 
 
