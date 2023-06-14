@@ -1,10 +1,13 @@
 import inspect
+import logging
 
 import click
 
 from sd_meh import merge_methods
 from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
+
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
 merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
 beta_methods = [

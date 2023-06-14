@@ -1,4 +1,5 @@
 import gc
+import logging
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +21,7 @@ from sd_meh.rebasin import (
     weight_matching,
 )
 
+logging.getLogger("sd_meh").addHandler(logging.NullHandler())
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
 NUM_MID_BLOCK = 1
@@ -99,7 +101,7 @@ def restore_sd_model(original_model: Dict, merged_model: Dict) -> Dict:
 
 def log_vram(txt=""):
     alloc = torch.cuda.memory_allocated(0)
-    print(f"{txt}: {alloc*1e-9:5.3f}")
+    logging.debug(f"{txt} VRAM: {alloc*1e-9:5.3f}GB")
 
 
 def load_thetas(
@@ -275,11 +277,16 @@ def rebasin_merge(
     model_a = thetas["model_a"].clone()
     perm_spec = sdunet_permutation_spec()
 
-    print("permuting")
+    logging.info("Init rebasin iterations")
     for it in range(iterations):
-        # print(it)
+        logging.info(f"Rebasin iteration {it}")
         log_vram(f"{it} iteration start")
-        new_weights, new_bases = step_weights_and_bases(weights, bases, it, iterations)
+        new_weights, new_bases = step_weights_and_bases(
+            weights,
+            bases,
+            it,
+            iterations,
+        )
         log_vram("weights & bases, before simple merge")
 
         # normal block merge we already know and love
@@ -451,7 +458,7 @@ def get_merge_method_args(
 
 
 def save_model(model, output_file, file_format) -> None:
-    print(f"saving {output_file}")
+    logging.info(f"saving {output_file}")
     if file_format == "safetensors":
         safetensors.torch.save_file(
             model if type(model) == dict else model.to_dict(),

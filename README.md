@@ -2,6 +2,9 @@
 
 [![PyPI version](https://badge.fury.io/py/sd-meh.svg)](https://badge.fury.io/py/sd-meh)
 
+[![](https://dcbadge.vercel.app/api/server/EZJuBfNVHh)](https://discord.gg/EZJuBfNVHh)
+
+
 The merging execution helper (meh) is a python module for stable diffusion models merging.
 This repository will never contain code for a webui extension.
 This is because the aim is to have a GUI agnostic merging engine that can be reused in multiple extensions. 
@@ -21,6 +24,8 @@ merged_model = merge_models(models, weights, bases, merge_mode, precision)
 ```
 
 You can have a look at the provided `merge_models.py` cli for an example on how to use the function. Run `python3 merge_models.py --help` for a list of the available arguments.
+
+[Join](https://discord.gg/EZJuBfNVHh) our discord server for discussion and features/bugfix requests
 
 ## Changelog
 
