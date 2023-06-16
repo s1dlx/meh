@@ -1,6 +1,5 @@
 # https://github.com/ogkalu2/Merge-Stable-Diffusion-models-without-distortion
-
-
+import logging
 from collections import defaultdict
 from random import shuffle
 from typing import Dict, NamedTuple, Tuple
@@ -8,6 +7,7 @@ from typing import Dict, NamedTuple, Tuple
 import torch
 from scipy.optimize import linear_sum_assignment
 
+logging.getLogger("sd_meh").addHandler(logging.NullHandler())
 SPECIAL_KEYS = [
     "first_stage_model.decoder.norm_out.weight",
     "first_stage_model.decoder.norm_out.bias",
@@ -2256,7 +2256,7 @@ def inner_matching(
     if newL - oldL != 0:
         linear_sum += abs((newL - oldL).item())
         number += 1
-        print(f" > {p}: {newL - oldL}")
+        logging.info(f" permutation {p}: {newL - oldL}")
 
     progress = progress or newL > oldL + 1e-12
 
