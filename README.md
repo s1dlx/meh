@@ -38,3 +38,22 @@ You can have a look at the provided `merge_models.py` cli for an example on how 
 - add `-wd, --work_device`
 - add `-pr, --prune`
 - add `-j, --threads`
+
+
+## DEV
+
+PRs are welcome for both new features and bug fixes. 
+
+Please make sure you format the code with black (you can `make format`) before submitting a PR.
+
+### You want to add a `feature`
+
+- open a `feat:` PR merging to `dev` branch, not `main`
+- *do not* update version numbers
+- ask for a review
+
+### You want to make a bug `fix`
+
+- open a `fix:` PR mergin to `main`
+- update version number in `pyproject.toml` and `sd_meh/__init__.py`
+- ask for a review
