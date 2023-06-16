@@ -4,6 +4,7 @@ import click
 
 from sd_meh.merge import merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
+from utils import MERGE_METHODS, weigths_and_bases
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
@@ -16,7 +17,7 @@ logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
     "-m",
     "--merging_method",
     "merge_mode",
-    type=click.Choice(list(merge_methods.keys()), case_sensitive=False),
+    type=click.Choice(list(MERGE_METHODS.keys()), case_sensitive=False),
 )
 @click.option("-wc", "--weights_clip", "weights_clip", is_flag=True)
 @click.option("-p", "--precision", "precision", type=int, default=16)

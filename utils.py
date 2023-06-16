@@ -1,12 +1,13 @@
 import inspect
 
+from sd_meh import merge_methods
 from sd_meh.merge import NUM_TOTAL_BLOCKS
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 
-merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
+MERGE_METHODS = dict(inspect.getmembers(merge_methods, inspect.isfunction))
 BETA_METHODS = [
     name
-    for name, fn in merge_methods.items()
+    for name, fn in MERGE_METHODS.items()
     if "beta" in inspect.getfullargspec(fn)[0]
 ]
 
