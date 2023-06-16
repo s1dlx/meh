@@ -144,6 +144,7 @@ def merge_models(
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
+    logging.info(f"start merging with {merge_mode} method")
     if re_basin:
         merged = rebasin_merge(
             thetas,
@@ -459,7 +460,7 @@ def get_merge_method_args(
 
 
 def save_model(model, output_file, file_format) -> None:
-    logging.info(f"saving {output_file}")
+    logging.info(f"Saving {output_file}")
     if file_format == "safetensors":
         safetensors.torch.save_file(
             model if type(model) == dict else model.to_dict(),

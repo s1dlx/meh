@@ -4,9 +4,9 @@ import click
 
 from sd_meh.merge import merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
-from utils import MERGE_METHODS, weigths_and_bases
+from utils import MERGE_METHODS, weights_and_bases
 
-logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
+logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
 
 
 @click.command()
@@ -136,14 +136,18 @@ def main(
     if model_c:
         models["model_c"] = model_c
 
-    weights, bases = weigths_and_bases(
+    weights, bases = weights_and_bases(
         merge_mode,
-        weigths_alpha,
+        weights_alpha,
         base_alpha,
         block_weights_preset_alpha,
-        weigths_beta,
+        weights_beta,
         base_beta,
         block_weights_preset_beta,
+        block_weights_preset_alpha_b,
+        block_weights_preset_beta_b,
+        presets_alpha_lambda,
+        presets_beta_lambda,
     )
 
     merged = merge_models(

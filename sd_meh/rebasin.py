@@ -2256,7 +2256,7 @@ def inner_matching(
     if newL - oldL != 0:
         linear_sum += abs((newL - oldL).item())
         number += 1
-        logging.info(f" > {p}: {newL - oldL}")
+        logging.info(f" permutation {p}: {newL - oldL}")
 
     progress = progress or newL > oldL + 1e-12
 

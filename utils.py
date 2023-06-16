@@ -1,4 +1,5 @@
 import inspect
+import logging
 
 from sd_meh import merge_methods
 from sd_meh.merge import NUM_TOTAL_BLOCKS
@@ -15,17 +16,25 @@ BETA_METHODS = [
 def compute_weights(weights, base):
     if not weights:
         return [base] * NUM_TOTAL_BLOCKS
-    if "," in weights:
-        w_alpha = list(map(float, weights.split(",")))
-        if len(w_alpha) == NUM_TOTAL_BLOCKS:
-            return w_alpha
+
+    if "," not in weights:
+        return weights
+
+    w_alpha = list(map(float, weights.split(",")))
+    if len(w_alpha) == NUM_TOTAL_BLOCKS:
+        return w_alpha
 
 
 def assemble_weights_and_bases(preset, weights, base, greek_letter):
+    logging.info(f"Assembling {greek_letter} w&b")
     if preset:
-        b, *w = BLOCK_WEIGHTS_PRESETS[preset]
-    bases = {greek_letter: b}
-    weights = {greek_letter: compute_weights(w, b)}
+        logging.info(f"Using {preset} preset")
+        base, *weights = BLOCK_WEIGHTS_PRESETS[preset]
+    bases = {greek_letter: base}
+    weights = {greek_letter: compute_weights(weights, base)}
+
+    logging.info(f"base_{greek_letter}: {bases[greek_letter]}")
+    logging.info(f"{greek_letter} weights: {weights[greek_letter]}")
 
     return weights, bases
 
@@ -33,23 +42,28 @@ def assemble_weights_and_bases(preset, weights, base, greek_letter):
 def interpolate_presets(
     weights, bases, weights_b, bases_b, greek_letter, presets_lambda
 ):
+    logging.info(f"Interpolating {greek_letter} w&b")
     for i, e in enumerate(weights[greek_letter]):
         weights[greek_letter][i] = (
             1 - presets_lambda
-        ) * e + presets_lambda * weigths_b[greek_letter][i]
-        bases[greek_letter] = (1 - presets_lambda) * bases[
-            greek_letter
-        ] + presets_lambda * bases_b[greek_letter]
+        ) * e + presets_lambda * weights_b[greek_letter][i]
 
-    return weiths, bases
+    bases[greek_letter] = (1 - presets_lambda) * bases[
+        greek_letter
+    ] + presets_lambda * bases_b[greek_letter]
+
+    logging.info(f"Interpolated base_{greek_letter}: {bases[greek_letter]}")
+    logging.info(f"Interpolated {greek_letter} weights: {weights[greek_letter]}")
+
+    return weights, bases
 
 
-def weigths_and_bases(
+def weights_and_bases(
     merge_mode,
-    weigths_alpha,
+    weights_alpha,
     base_alpha,
     block_weights_preset_alpha,
-    weigths_beta,
+    weights_beta,
     base_beta,
     block_weights_preset_beta,
     block_weights_preset_alpha_b,
@@ -65,6 +79,7 @@ def weigths_and_bases(
     )
 
     if block_weights_preset_alpha_b:
+        logging.info("Computing w&b for alpha interpolation")
         weights_b, bases_b = assemble_weights_and_bases(
             block_weights_preset_alpha_b,
             None,
@@ -89,6 +104,7 @@ def weigths_and_bases(
         )
 
         if block_weights_preset_beta_b:
+            logging.info("Computing w&b for beta interpolation")
             weights_b, bases_b = assemble_weights_and_bases(
                 block_weights_preset_beta_b,
                 None,
