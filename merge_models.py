@@ -6,7 +6,6 @@ from sd_meh.merge import merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 from utils import MERGE_METHODS, weights_and_bases
 
-logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
 
 
 @click.command()
@@ -106,6 +105,13 @@ logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
     type=float,
     default=None,
 )
+@click.option(
+    "-ll",
+    "--logging_level",
+    "logging_level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+)
 def main(
     model_a,
     model_b,
@@ -131,7 +137,11 @@ def main(
     block_weights_preset_beta_b,
     presets_alpha_lambda,
     presets_beta_lambda,
+    logging_level,
 ):
+    if logging_level:
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
+
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
         models["model_c"] = model_c

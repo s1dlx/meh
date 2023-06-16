@@ -186,6 +186,7 @@ def un_prune_model(
     precision: int,
 ) -> Dict:
     if prune:
+        logging.info("Un-pruning merged model")
         del thetas
         gc.collect()
         log_vram("remove thetas")
