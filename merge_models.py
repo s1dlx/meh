@@ -7,7 +7,6 @@ from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 from utils import MERGE_METHODS, weights_and_bases
 
 
-
 @click.command()
 @click.option("-a", "--model_a", "model_a", type=str)
 @click.option("-b", "--model_b", "model_b", type=str)
