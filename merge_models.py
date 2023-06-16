@@ -1,29 +1,11 @@
-import inspect
 import logging
 
 import click
 
-from sd_meh import merge_methods
-from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
+from sd_meh.merge import merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
-
-merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
-beta_methods = [
-    name
-    for name, fn in merge_methods.items()
-    if "beta" in inspect.getfullargspec(fn)[0]
-]
-
-
-def compute_weights(weights, base):
-    if not weights:
-        return [base] * NUM_TOTAL_BLOCKS
-    if "," in weights:
-        w_alpha = list(map(float, weights.split(",")))
-        if len(w_alpha) == NUM_TOTAL_BLOCKS:
-            return w_alpha
 
 
 @click.command()
@@ -95,6 +77,34 @@ def compute_weights(weights, base):
     type=int,
     default=1,
 )
+@click.option(
+    "-bwpab",
+    "--block_weights_preset_alpha_b",
+    "block_weights_preset_alpha_b",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-bwpbb",
+    "--block_weights_preset_beta_b",
+    "block_weights_preset_beta_b",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-pal",
+    "--presets_alpha_lambda",
+    "presets_alpha_lambda",
+    type=float,
+    default=None,
+)
+@click.option(
+    "-pbl",
+    "--presets_beta_lambda",
+    "presets_beta_lambda",
+    type=float,
+    default=None,
+)
 def main(
     model_a,
     model_b,
@@ -116,21 +126,24 @@ def main(
     block_weights_preset_alpha,
     block_weights_preset_beta,
     threads,
+    block_weights_preset_alpha_b,
+    block_weights_preset_beta_b,
+    presets_alpha_lambda,
+    presets_beta_lambda,
 ):
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
         models["model_c"] = model_c
 
-    if block_weights_preset_alpha:
-        base_alpha, *weights_alpha = BLOCK_WEIGHTS_PRESETS[block_weights_preset_alpha]
-    bases = {"alpha": base_alpha}
-    weights = {"alpha": compute_weights(weights_alpha, base_alpha)}
-
-    if merge_mode in beta_methods:
-        if block_weights_preset_beta:
-            base_beta, *weights_beta = BLOCK_WEIGHTS_PRESETS[block_weights_preset_beta]
-        weights["beta"] = compute_weights(weights_beta, base_beta)
-        bases["beta"] = base_beta
+    weights, bases = weigths_and_bases(
+        merge_mode,
+        weigths_alpha,
+        base_alpha,
+        block_weights_preset_alpha,
+        weigths_beta,
+        base_beta,
+        block_weights_preset_beta,
+    )
 
     merged = merge_models(
         models,
