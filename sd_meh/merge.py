@@ -363,11 +363,11 @@ def merge_key(
     merge_mode: str,
     precision: int = 16,
     weights_clip: bool = False,
-    storage_device: str = "cpu",
+    device: str = "cpu",
     work_device: Optional[str] = None,
 ) -> Optional[Tuple[str, Dict]]:
     if work_device is None:
-        work_device = storage_device
+        work_device = device
 
     if KEY_POSITION_IDS in key:
         return
@@ -409,7 +409,7 @@ def merge_key(
             raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
         merge_args = get_merge_method_args(current_bases, thetas, key, work_device)
-        merged_key = merge_method(**merge_args).to(storage_device)
+        merged_key = merge_method(**merge_args).to(device)
 
         if weights_clip:
             t0 = thetas["model_a"][key]
