@@ -129,7 +129,10 @@ def load_thetas(
 
 
 def merge_models(
-    models: Dict[str, os.PathLike | str],
+    model_a: str,
+    model_b: str,
+    model_c: str,
+    model_d_sub: str,
     weights: Dict,
     bases: Dict,
     merge_mode: str,
@@ -142,7 +145,58 @@ def merge_models(
     prune: bool = False,
     threads: int = 1,
 ) -> Dict:
-    thetas = load_thetas(models, prune, device, precision)
+    if model_d_sub:
+        models = {"model_a": model_a, "model_b": model_d_sub}
+        theta_temp = load_thetas(models, prune, device, precision)
+        a_sub = simple_merge(
+            theta_temp,
+            weights,
+            bases,
+            "pure_difference",
+            precision=precision,
+            weights_clip=weights_clip,
+            device=device,
+            work_device=work_device,
+            threads=threads,
+        )
+
+        models = {"model_a": model_b, "model_b": model_d_sub}
+        theta_temp = load_thetas(models, prune, device, precision)
+        b_sub = simple_merge(
+            theta_temp,
+            weights,
+            bases,
+            "pure_difference",
+            precision=precision,
+            weights_clip=weights_clip,
+            device=device,
+            work_device=work_device,
+            threads=threads,
+        )
+
+        thetas = {"model_a": a_sub, "model_b": b_sub}
+
+        if model_c:
+            models = {"model_a": model_c, "model_b": model_d_sub}
+            theta_temp = load_thetas(models, prune, device, precision)
+            c_sub = simple_merge(
+                theta_temp,
+                weights,
+                bases,
+                "pure_difference",
+                precision=precision,
+                weights_clip=weights_clip,
+                device=device,
+                work_device=work_device,
+                threads=threads,
+            )
+            
+            thetas["model_c"] = c_sub
+    else:
+        models = {"model_a": model_a, "model_b": model_b}
+        if model_c:
+            models["model_c"] = model_c
+        thetas = load_thetas(models, prune, device, precision)
 
     logging.info(f"start merging with {merge_mode} method")
     if re_basin:
@@ -167,6 +221,21 @@ def merge_models(
             weights,
             bases,
             merge_mode,
+            precision=precision,
+            weights_clip=weights_clip,
+            device=device,
+            work_device=work_device,
+            threads=threads,
+        )
+
+    if model_d_sub:
+        theta_temp = load_thetas({"model_a": model_d_sub}, prune, device, precision)
+        theta_temp["model_b"] = merged
+        merged = simple_merge(
+            theta_temp,
+            weights,
+            bases,
+            "pure_addition",
             precision=precision,
             weights_clip=weights_clip,
             device=device,

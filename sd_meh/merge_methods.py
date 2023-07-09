@@ -17,6 +17,8 @@ __all__ = [
     "similarity_add_difference",
     "distribution_crossover",
     "ties_add_difference",
+    "pure_difference",
+    "pure_addition"
 ]
 
 
@@ -209,3 +211,9 @@ def filter_top_k(a: Tensor, k: float):
     k_value, _ = torch.kthvalue(torch.abs(a.flatten()).float(), k)
     top_k_filter = (torch.abs(a) >= k_value).float()
     return a * top_k_filter
+
+def pure_difference(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
+    return a - b
+
+def pure_addition(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
+    return a + b

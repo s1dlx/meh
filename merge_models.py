@@ -11,6 +11,7 @@ from utils import MERGE_METHODS, weights_and_bases
 @click.option("-a", "--model_a", "model_a", type=str)
 @click.option("-b", "--model_b", "model_b", type=str)
 @click.option("-c", "--model_c", "model_c", default=None, type=str)
+@click.option("-d_sub", "--model_d_sub", "model_d_sub", default=None, type=str)
 @click.option(
     "-m",
     "--merging_method",
@@ -115,6 +116,7 @@ def main(
     model_a,
     model_b,
     model_c,
+    model_d_sub,
     merge_mode,
     weights_clip,
     precision,
@@ -141,10 +143,6 @@ def main(
     if logging_level:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
 
-    models = {"model_a": model_a, "model_b": model_b}
-    if model_c:
-        models["model_c"] = model_c
-
     weights, bases = weights_and_bases(
         merge_mode,
         weights_alpha,
@@ -160,7 +158,10 @@ def main(
     )
 
     merged = merge_models(
-        models,
+        model_a,
+        model_b,
+        model_c,
+        model_d_sub,
         weights,
         bases,
         merge_mode,
