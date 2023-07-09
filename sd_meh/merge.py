@@ -341,13 +341,12 @@ def rebasin_merge(
 
         log_vram("model a updated")
 
-    merged = thetas["model_a"]
-    clip_thetas = thetas.copy()
-    clip_thetas["model_a"] = model_a
     if weights_clip:
-        merged = clip_weights(clip_thetas, merged)
+        clip_thetas = thetas.copy()
+        clip_thetas["model_a"] = model_a
+        thetas["model_a"] = clip_weights(clip_thetas, thetas["model_a"])
 
-    return merged
+    return thetas["model_a"]
 
 
 def simple_merge_key(progress, key, thetas, *args, **kwargs):
