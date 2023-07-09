@@ -143,7 +143,9 @@ def merge_models(
     threads: int = 1,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
+
     if "model_d" in models:
+        logging.info(f"substract from a")
         a_sub = simple_merge(
             {"model_a": thetas["model_a"], "model_b": thetas["model_d"]},
             weights,
@@ -156,6 +158,10 @@ def merge_models(
             threads=threads,
         )
 
+        thetas["model_a"] = a_sub
+        del a_sub
+
+        logging.info(f"substract from b")
         b_sub = simple_merge(
             {"model_a": thetas["model_b"], "model_b": thetas["model_d"]},
             weights,
@@ -168,9 +174,11 @@ def merge_models(
             threads=threads,
         )
 
-        thetas_m = {"model_a": a_sub, "model_b": b_sub}
+        thetas["model_b"] = b_sub
+        del b_sub
 
         if "model_c" in models:
+            logging.info(f"substract from c")
             c_sub = simple_merge(
                 {"model_a": thetas["model_c"], "model_b": thetas["model_d"]},
                 weights,
@@ -182,45 +190,72 @@ def merge_models(
                 work_device=work_device,
                 threads=threads,
             )
-            
-            thetas_m["model_c"] = c_sub
-    else:
-        models_temp = {"model_a": models["model_a"], "model_b": models["model_b"]}
-        if "model_c" in models:
-            models_temp["model_c"] = models["model_c"]
-        thetas_m = load_thetas(models_temp, prune, device, precision)
+
+            thetas["model_c"] = c_sub
+            del c_sub
 
     logging.info(f"start merging with {merge_mode} method")
     if re_basin:
-        merged = rebasin_merge(
-            thetas_m,
-            weights,
-            bases,
-            merge_mode,
-            precision=precision,
-            weights_clip=False,
-            iterations=iterations,
-            device=device,
-            work_device=work_device,
-            threads=threads,
-        )
-        # clip only after the last re-basin iteration
-        if weights_clip:
-            merged = clip_weights(thetas, merged)
+        if "model_c" in models:
+            merged = rebasin_merge(
+                {"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]},
+                weights,
+                bases,
+                merge_mode,
+                precision=precision,
+                weights_clip=False,
+                iterations=iterations,
+                device=device,
+                work_device=work_device,
+                threads=threads,
+            )
+            # clip only after the last re-basin iteration
+            if weights_clip:
+                merged = clip_weights({"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]}, merged)
+        else:
+            merged = rebasin_merge(
+                {"model_a": thetas["model_a"], "model_b": thetas["model_b"]},
+                weights,
+                bases,
+                merge_mode,
+                precision=precision,
+                weights_clip=False,
+                iterations=iterations,
+                device=device,
+                work_device=work_device,
+                threads=threads,
+            )
+            # clip only after the last re-basin iteration
+            if weights_clip:
+                merged = clip_weights({"model_a": thetas["model_a"], "model_b": thetas["model_b"]}, merged)
     else:
-        merged = simple_merge(
-            thetas_m,
-            weights,
-            bases,
-            merge_mode,
-            precision=precision,
-            weights_clip=weights_clip,
-            device=device,
-            work_device=work_device,
-            threads=threads,
-        )
-
+        if "model_c" in models:
+            merged = simple_merge(
+                {"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]},
+                weights,
+                bases,
+                merge_mode,
+                precision=precision,
+                weights_clip=weights_clip,
+                device=device,
+                work_device=work_device,
+                threads=threads,
+            )
+        else:
+            merged = simple_merge(
+                {"model_a": thetas["model_a"], "model_b": thetas["model_b"]},
+                weights,
+                bases,
+                merge_mode,
+                precision=precision,
+                weights_clip=weights_clip,
+                device=device,
+                work_device=work_device,
+                threads=threads,
+            )
+        
     if "model_d" in models:
+        logging.info(f"add back into d")
         merged = simple_merge(
             {"model_a": merged, "model_b": thetas["model_d"]},
             weights,
@@ -234,6 +269,7 @@ def merge_models(
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
+
 
 
 def un_prune_model(
