@@ -143,6 +143,12 @@ def main(
     if logging_level:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
 
+    models = {"model_a": model_a, "model_b": model_b}
+    if(model_c):
+        models["model_c"] = model_c
+    if(model_d_sub):
+        models["model_d"] = model_d_sub
+
     weights, bases = weights_and_bases(
         merge_mode,
         weights_alpha,
@@ -158,10 +164,7 @@ def main(
     )
 
     merged = merge_models(
-        model_a,
-        model_b,
-        model_c,
-        model_d_sub,
+        models,
         weights,
         bases,
         merge_mode,

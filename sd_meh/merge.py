@@ -129,10 +129,7 @@ def load_thetas(
 
 
 def merge_models(
-    model_a: str,
-    model_b: str,
-    model_c: str,
-    model_d_sub: str,
+    models: Dict[str, os.PathLike | str],
     weights: Dict,
     bases: Dict,
     merge_mode: str,
@@ -145,9 +142,9 @@ def merge_models(
     prune: bool = False,
     threads: int = 1,
 ) -> Dict:
-    if model_d_sub:
-        models = {"model_a": model_a, "model_b": model_d_sub}
-        theta_temp = load_thetas(models, prune, device, precision)
+    if "model_d" in models:
+        models_temp = {"model_a": models["model_a"], "model_b": models["model_d"]}
+        theta_temp = load_thetas(models_temp, prune, device, precision)
         a_sub = simple_merge(
             theta_temp,
             weights,
@@ -160,8 +157,8 @@ def merge_models(
             threads=threads,
         )
 
-        models = {"model_a": model_b, "model_b": model_d_sub}
-        theta_temp = load_thetas(models, prune, device, precision)
+        models_temp = {"model_a": models["model_b"], "model_b": models["model_d"]}
+        theta_temp = load_thetas(models_temp, prune, device, precision)
         b_sub = simple_merge(
             theta_temp,
             weights,
@@ -176,9 +173,9 @@ def merge_models(
 
         thetas = {"model_a": a_sub, "model_b": b_sub}
 
-        if model_c:
-            models = {"model_a": model_c, "model_b": model_d_sub}
-            theta_temp = load_thetas(models, prune, device, precision)
+        if "model_c" in models:
+            models_temp = {"model_a": models["model_c"], "model_b": models["model_d"]}
+            theta_temp = load_thetas(models_temp, prune, device, precision)
             c_sub = simple_merge(
                 theta_temp,
                 weights,
@@ -193,9 +190,9 @@ def merge_models(
             
             thetas["model_c"] = c_sub
     else:
-        models = {"model_a": model_a, "model_b": model_b}
-        if model_c:
-            models["model_c"] = model_c
+        models_temp = {"model_a": models["model_a"], "model_b": models["model_b"]}
+        if "model_c" in models:
+            models_temp["model_c"] = models["model_c"]
         thetas = load_thetas(models, prune, device, precision)
 
     logging.info(f"start merging with {merge_mode} method")
@@ -228,8 +225,8 @@ def merge_models(
             threads=threads,
         )
 
-    if model_d_sub:
-        theta_temp = load_thetas({"model_a": model_d_sub}, prune, device, precision)
+    if "model_d" in models:
+        theta_temp = load_thetas({"model_a": models["model_d"]}, prune, device, precision)
         theta_temp["model_b"] = merged
         merged = simple_merge(
             theta_temp,
