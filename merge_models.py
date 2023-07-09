@@ -144,9 +144,9 @@ def main(
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
 
     models = {"model_a": model_a, "model_b": model_b}
-    if(model_c):
+    if model_c:
         models["model_c"] = model_c
-    if(model_d_sub):
+    if model_d_sub:
         models["model_d"] = model_d_sub
 
     weights, bases = weights_and_bases(

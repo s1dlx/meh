@@ -198,7 +198,11 @@ def merge_models(
     if re_basin:
         if "model_c" in models:
             merged = rebasin_merge(
-                {"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]},
+                {
+                    "model_a": thetas["model_a"],
+                    "model_b": thetas["model_b"],
+                    "model_c": thetas["model_c"],
+                },
                 weights,
                 bases,
                 merge_mode,
@@ -211,7 +215,14 @@ def merge_models(
             )
             # clip only after the last re-basin iteration
             if weights_clip:
-                merged = clip_weights({"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]}, merged)
+                merged = clip_weights(
+                    {
+                        "model_a": thetas["model_a"],
+                        "model_b": thetas["model_b"],
+                        "model_c": thetas["model_c"],
+                    },
+                    merged,
+                )
         else:
             merged = rebasin_merge(
                 {"model_a": thetas["model_a"], "model_b": thetas["model_b"]},
@@ -227,11 +238,17 @@ def merge_models(
             )
             # clip only after the last re-basin iteration
             if weights_clip:
-                merged = clip_weights({"model_a": thetas["model_a"], "model_b": thetas["model_b"]}, merged)
+                merged = clip_weights(
+                    {"model_a": thetas["model_a"], "model_b": thetas["model_b"]}, merged
+                )
     else:
         if "model_c" in models:
             merged = simple_merge(
-                {"model_a": thetas["model_a"], "model_b": thetas["model_b"], "model_c": thetas["model_c"]},
+                {
+                    "model_a": thetas["model_a"],
+                    "model_b": thetas["model_b"],
+                    "model_c": thetas["model_c"],
+                },
                 weights,
                 bases,
                 merge_mode,
@@ -253,7 +270,7 @@ def merge_models(
                 work_device=work_device,
                 threads=threads,
             )
-        
+
     if "model_d" in models:
         logging.info(f"add back into d")
         merged = simple_merge(
@@ -269,7 +286,6 @@ def merge_models(
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
-
 
 
 def un_prune_model(
