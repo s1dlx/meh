@@ -430,10 +430,8 @@ def clip_weights(thetas, merged):
 def clip_weights_key(thetas, merged_weights, key):
     t0 = thetas["model_a"][key]
     t1 = thetas["model_b"][key]
-    stacked_thetas = torch.stack([torch.flatten(t0), torch.flatten(t1)])
-    argmin = torch.argmin(stacked_thetas, dim=0).reshape_as(t0)
-    maximums = argmin * t0 + (1 - argmin) * t1
-    minimums = (1 - argmin) * t0 + argmin * t1
+    maximums = torch.maximum(t0, t1)
+    minimums = torch.minimum(t0, t1)
     return torch.minimum(torch.maximum(merged_weights, minimums), maximums)
 
 
