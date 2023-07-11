@@ -230,7 +230,7 @@ def simple_merge(
     sim = None
     sims = None
 
-    if merge_mode == "cosineA" or "cosineB":
+    if (merge_mode == "cosineA") or (merge_mode == "cosineB"):
         sim = torch.nn.CosineSimilarity(dim=0)
         sims = np.array([], dtype=np.float64)
         for key in tqdm(thetas["model_a"].keys(), desc="stage 0"):

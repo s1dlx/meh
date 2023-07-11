@@ -19,6 +19,7 @@ __all__ = [
     "ties_add_difference",
     "cosineA",
     "cosineB",
+    "train_difference",
 ]
 
 
@@ -239,3 +240,21 @@ def cosineB(a: Tensor, b: Tensor, alpha: float, sim, sims, **kwargs) -> Tensor:
     k = k - alpha
     k = k.clip(min=0.0, max=1.0)
     return a * (1 - k) + b * k
+
+
+def train_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+    diff_AB = b.float() - c.float()
+
+    distance_A0 = torch.abs(b.float() - c.float())
+    distance_A1 = torch.abs(b.float() - a.float())
+
+    sum_distances = distance_A0 + distance_A1
+
+    scale = torch.where(
+        sum_distances != 0, distance_A1 / sum_distances, torch.tensor(0.0).float()
+    )
+    sign_scale = torch.sign(b.float() - c.float())
+    scale = sign_scale * torch.abs(scale)
+
+    new_diff = scale * torch.abs(diff_AB)
+    return a + (new_diff * (alpha * 1.8))
