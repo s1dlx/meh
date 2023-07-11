@@ -17,6 +17,8 @@ __all__ = [
     "similarity_add_difference",
     "distribution_crossover",
     "ties_add_difference",
+    "cosineA",
+    "cosineB",
 ]
 
 
@@ -209,3 +211,31 @@ def filter_top_k(a: Tensor, k: float):
     k_value, _ = torch.kthvalue(torch.abs(a.flatten()).float(), k)
     top_k_filter = (torch.abs(a) >= k_value).float()
     return a * top_k_filter
+
+
+def cosineA(a: Tensor, b: Tensor, alpha: float, sim, sims, **kwargs) -> Tensor:
+    a_norm = torch.nn.functional.normalize(a.to(torch.float32), p=2, dim=0)
+    b_norm = torch.nn.functional.normalize(b.to(torch.float32), p=2, dim=0)
+
+    simab = sim(a_norm, b_norm)
+    dot_product = torch.dot(a_norm.view(-1), b_norm.view(-1))
+    magnitude_similarity = dot_product / (torch.norm(a) * torch.norm(b))
+    combined_similarity = (simab + magnitude_similarity) / 2.0
+
+    k = (combined_similarity - sims.min()) / (sims.max() - sims.min())
+    k = k - alpha
+    k = k.clip(min=0.0, max=1.0)
+    return a * (1 - k) + b * k
+
+
+def cosineB(a: Tensor, b: Tensor, alpha: float, sim, sims, **kwargs) -> Tensor:
+    simab = sim(a.to(torch.float32), b.to(torch.float32))
+    dot_product = torch.dot(a.view(-1).to(torch.float32), b.view(-1).to(torch.float32))
+    magnitude_similarity = dot_product / (
+        torch.norm(a.to(torch.float32)) * torch.norm(b.to(torch.float32))
+    )
+    combined_similarity = (simab + magnitude_similarity) / 2.0
+    k = (combined_similarity - sims.min()) / (sims.max() - sims.min())
+    k = k - alpha
+    k = k.clip(min=0.0, max=1.0)
+    return a * (1 - k) + b * k
