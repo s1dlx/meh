@@ -1,5 +1,6 @@
 import math
 from typing import Tuple
+import scipy
 
 import torch
 from torch import Tensor
@@ -20,6 +21,7 @@ __all__ = [
     "cosineA",
     "cosineB",
     "train_difference",
+    "smooth_add",
 ]
 
 
@@ -258,3 +260,11 @@ def train_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) ->
 
     new_diff = scale * torch.abs(diff_AB)
     return a + (new_diff * (alpha * 1.8))
+
+def smooth_add(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+    # Apply median filter to the weight differences
+    filtered_diff = scipy.ndimage.median_filter((b - c).to(torch.float32).cpu().numpy(), size=3)
+    # Apply Gaussian filter to the filtered differences
+    filtered_diff = scipy.ndimage.gaussian_filter(filtered_diff, sigma=1)
+    return a + alpha * torch.tensor(filtered_diff)
+
