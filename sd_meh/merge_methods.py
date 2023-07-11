@@ -209,16 +209,3 @@ def filter_top_k(a: Tensor, k: float):
     k_value, _ = torch.kthvalue(torch.abs(a.flatten()).float(), k)
     top_k_filter = (torch.abs(a) >= k_value).float()
     return a * top_k_filter
-
-
-def maximum(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    return torch.maximum(a.float(), b.float())
-
-
-def minimum(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    return torch.minimum(a.float(), b.float())
-
-
-def signed_maximum(a: Tensor, b: Tensor, **kwargs) -> Tensor:
-    maximums = torch.argmin(torch.stack([torch.abs(torch.flatten(a)), torch.abs(torch.flatten(b))]), dim=0).reshape_as(a)
-    return (1 - maximums) * a + maximums * b
