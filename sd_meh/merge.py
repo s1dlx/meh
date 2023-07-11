@@ -2,6 +2,7 @@ import gc
 import logging
 import os
 import re
+from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -228,40 +229,39 @@ def simple_merge(
     futures = []
     sim = None
     sims = None
-
-    if (merge_mode == "cosineA") or (merge_mode == "cosineB"):
+    cos = tuple(["cosineA", "cosineB", "cosA_similarity_add_difference", "cosA_similarity_smooth_add_difference", "cosA_similarity_add_trained_difference", "cosA_similarity_smooth_add_trained_difference"])
+    if merge_mode in cos:
         sim = torch.nn.CosineSimilarity(dim=0)
         sims = np.array([], dtype=np.float64)
-        if (merge_mode == "cosineA") or (merge_mode == "cosineB"):
-            for key in tqdm(thetas["model_a"].keys(), desc="stage 0"):
-                # skip VAE model parameters to get better results
-                if "first_stage_model" in key:
-                    continue
-                if "model" in key and key in thetas["model_b"].keys():
-                    if merge_mode == "cosineA":
-                        theta_A_norm = torch.nn.functional.normalize(
-                            thetas["model_a"][key].to(torch.float32), p=2, dim=0
-                        )
-                        theta_B_norm = torch.nn.functional.normalize(
-                            thetas["model_b"][key].to(torch.float32), p=2, dim=0
-                        )
-                        simab = sim(theta_A_norm, theta_B_norm)
-                        sims = np.append(sims, simab.numpy())
-                    elif merge_mode == "cosineB":
-                        simab = sim(
-                            thetas["model_a"][key].to(torch.float32),
-                            thetas["model_b"][key].to(torch.float32),
-                        )
-                        dot_product = torch.dot(
-                            thetas["model_a"][key].view(-1).to(torch.float32),
-                            thetas["model_b"][key].view(-1).to(torch.float32),
-                        )
-                        magnitude_similarity = dot_product / (
-                            torch.norm(thetas["model_a"][key].to(torch.float32))
-                            * torch.norm(thetas["model_a"][key].to(torch.float32))
-                        )
-                        combined_similarity = (simab + magnitude_similarity) / 2.0
-                        sims = np.append(sims, combined_similarity.numpy())
+        for key in tqdm(thetas["model_a"].keys(), desc="stage 0"):
+            # skip VAE model parameters to get better results
+            if "first_stage_model" in key:
+                continue
+            if "model" in key and key in thetas["model_b"].keys():
+                if merge_mode != "cosineB":
+                    theta_A_norm = torch.nn.functional.normalize(
+                        thetas["model_a"][key].to(torch.float32), p=2, dim=0
+                    )
+                    theta_B_norm = torch.nn.functional.normalize(
+                        thetas["model_b"][key].to(torch.float32), p=2, dim=0
+                    )
+                    simab = sim(theta_A_norm, theta_B_norm)
+                    sims = np.append(sims, simab.numpy())
+                else:
+                    simab = sim(
+                        thetas["model_a"][key].to(torch.float32),
+                        thetas["model_b"][key].to(torch.float32),
+                    )
+                    dot_product = torch.dot(
+                        thetas["model_a"][key].view(-1).to(torch.float32),
+                        thetas["model_b"][key].view(-1).to(torch.float32),
+                    )
+                    magnitude_similarity = dot_product / (
+                        torch.norm(thetas["model_a"][key].to(torch.float32))
+                        * torch.norm(thetas["model_a"][key].to(torch.float32))
+                    )
+                    combined_similarity = (simab + magnitude_similarity) / 2.0
+                    sims = np.append(sims, combined_similarity.numpy())
             sims = np.delete(
                 sims, np.where(sims < np.percentile(sims, 1, method="midpoint"))
             )
