@@ -49,6 +49,7 @@ CPU_FALLBACK = 0
 def weighted_sum(a: Tensor, b: Tensor, alpha: float, **kwargs) -> Tensor:
     return (1 - alpha) * a + alpha * b
 
+
 def cosine_similarity_A(a: Tensor, b: Tensor, alpha: float, sim, sims) -> float:
     a_norm = torch.nn.functional.normalize(a.to(torch.float32), p=2, dim=0)
     b_norm = torch.nn.functional.normalize(b.to(torch.float32), p=2, dim=0)
@@ -60,7 +61,8 @@ def cosine_similarity_A(a: Tensor, b: Tensor, alpha: float, sim, sims) -> float:
 
     k = (combined_similarity - sims.min()) / (sims.max() - sims.min())
     k = k - alpha
-    return (1 - k.clip(min=0.0, max=1.0))
+    return 1 - k.clip(min=0.0, max=1.0)
+
 
 def cosine_similarity_B(a: Tensor, b: Tensor, alpha: float, sim, sims) -> float:
     simab = sim(a.to(torch.float32), b.to(torch.float32))
@@ -71,7 +73,8 @@ def cosine_similarity_B(a: Tensor, b: Tensor, alpha: float, sim, sims) -> float:
     combined_similarity = (simab + magnitude_similarity) / 2.0
     k = (combined_similarity - sims.min()) / (sims.max() - sims.min())
     k = k - alpha
-    return (1 - k.clip(min=0.0, max=1.0))
+    return 1 - k.clip(min=0.0, max=1.0)
+
 
 def cosineA(a: Tensor, b: Tensor, alpha: float, sim, sims, **kwargs) -> Tensor:
     k = cosine_similarity_A(a, b, alpha, sim, sims)
@@ -82,14 +85,17 @@ def cosineB(a: Tensor, b: Tensor, alpha: float, sim, sims, **kwargs) -> Tensor:
     k = cosine_similarity_B(a, b, alpha, sim, sims)
     return a * (1 - k) + b * k
 
+
 def smooth(a: Tensor) -> Tensor:
     global CPU_FALLBACK
-    if(CPU_FALLBACK==1):
+    if CPU_FALLBACK == 1:
         # Apply median filter to the weight differences
-        filtered_diff = scipy.ndimage.median_filter(a.to(torch.float32).cpu().numpy(), size=3)
+        filtered_diff = scipy.ndimage.median_filter(
+            a.to(torch.float32).cpu().numpy(), size=3
+        )
         # Apply Gaussian filter to the filtered differences
         filtered_diff = scipy.ndimage.gaussian_filter(filtered_diff, sigma=1)
-        
+
         # Add the filtered differences to the original weights
         return torch.tensor(filtered_diff)
     try:
@@ -103,24 +109,35 @@ def smooth(a: Tensor) -> Tensor:
         # Apply Gaussian filter to the filtered differences
         filtered_diff = cupyx.scipy.ndimage.gaussian_filter(filtered_diff, sigma=1)
 
-        return from_dlpack(filtered_diff.toDlpack()).cpu() # Let's pretend this was on the cpu the whole time
+        return from_dlpack(
+            filtered_diff.toDlpack()
+        ).cpu()  # Let's pretend this was on the cpu the whole time
     except Exception as err:
-        print(f"CuPy not installed or CuPy dependencies were not installed properly. Error: {err}")
-        print("Falling back to CPU based filtering. Expect a Significant Increase in merge times!")
-        CPU_FALLBACK=1
+        print(
+            f"CuPy not installed or CuPy dependencies were not installed properly. Error: {err}"
+        )
+        print(
+            "Falling back to CPU based filtering. Expect a Significant Increase in merge times!"
+        )
+        CPU_FALLBACK = 1
         # Apply median filter to the weight differences
-        filtered_diff = scipy.ndimage.median_filter(a.to(torch.float32).cpu().numpy(), size=3)
+        filtered_diff = scipy.ndimage.median_filter(
+            a.to(torch.float32).cpu().numpy(), size=3
+        )
         # Apply Gaussian filter to the filtered differences
         filtered_diff = scipy.ndimage.gaussian_filter(filtered_diff, sigma=1)
         return torch.tensor(filtered_diff)
-    
+
 
 def add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
     return a + alpha * (b - c)
 
 
-def smooth_add_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+def smooth_add_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
     return a + alpha * smooth(b - c)
+
 
 def train_difference(a: Tensor, b: Tensor, c: Tensor) -> Tensor:
     diff_AB = a.float() - b.float()
@@ -139,11 +156,18 @@ def train_difference(a: Tensor, b: Tensor, c: Tensor) -> Tensor:
     new_diff = scale * torch.abs(diff_AB)
     return new_diff
 
-def add_trained_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+
+def add_trained_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
     return a + alpha * 1.8 * train_difference(a, b, c)
 
-def smooth_add_trained_difference(a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs) -> Tensor:
+
+def smooth_add_trained_difference(
+    a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
+) -> Tensor:
     return a + alpha * 1.8 * smooth(train_difference(a, b, c))
+
 
 def euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
@@ -161,6 +185,7 @@ def euclidean_add_difference(
     target_norm = torch.linalg.norm(sum_diff)
     return c + distance / torch.linalg.norm(distance) * target_norm
 
+
 def smooth_euclidean_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, **kwargs
 ) -> Tensor:
@@ -177,6 +202,7 @@ def smooth_euclidean_add_difference(
     target_norm = torch.linalg.norm(sum_diff)
     return c + smooth(distance / torch.linalg.norm(distance) * target_norm)
 
+
 def multiply_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
@@ -184,6 +210,7 @@ def multiply_difference(
     diff_b = torch.pow(torch.abs(b.float() - c), alpha)
     difference = torch.copysign(diff_a * diff_b, weighted_sum(a, b, beta) - c)
     return c + difference.to(c.dtype)
+
 
 def smooth_multiply_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
@@ -247,6 +274,7 @@ def similarity_add_difference(
     ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
 
+
 def similarity_smooth_add_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
@@ -258,6 +286,7 @@ def similarity_smooth_add_difference(
     ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
 
+
 def similarity_add_trained_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
@@ -268,6 +297,7 @@ def similarity_add_trained_difference(
     ab_diff = a + alpha * 1.8 * train_difference(a, b, c)
     ab_sum = (1 - alpha / 2) * a + (alpha / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
+
 
 def similarity_smooth_add_trained_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
@@ -306,6 +336,7 @@ def cosA_similarity_smooth_add_difference(
     ab_sum = (1 - k / 2) * a + (k / 2) * b
     return (1 - similarity) * smooth(ab_diff) + similarity * ab_sum
 
+
 def cosA_similarity_add_trained_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, sim, sims, **kwargs
 ) -> Tensor:
@@ -318,6 +349,7 @@ def cosA_similarity_add_trained_difference(
     ab_sum = (1 - k / 2) * a + (k / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
 
+
 def cosA_similarity_smooth_add_trained_difference(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, sim, sims, **kwargs
 ) -> Tensor:
@@ -329,6 +361,7 @@ def cosA_similarity_smooth_add_trained_difference(
     k = cosine_similarity_A(a, b, alpha, sim, sims)
     ab_sum = (1 - k / 2) * a + (k / 2) * b
     return (1 - similarity) * ab_diff + similarity * ab_sum
+
 
 def weighted_subtraction(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs
@@ -350,6 +383,7 @@ def triple_sum(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
 ) -> Tensor:
     return (1 - alpha - beta) * a + alpha * b + beta * c
+
 
 def distribution_crossover(
     a: Tensor, b: Tensor, c: Tensor, alpha: float, beta: float, **kwargs
@@ -390,6 +424,7 @@ def tensor_sum(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs) -> Ten
         tt = b.clone()
         tt[talphas:talphae] = a[talphas:talphae].clone()
     return tt
+
 
 def top_k_tensor_sum(
     a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs

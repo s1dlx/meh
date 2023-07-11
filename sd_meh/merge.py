@@ -215,6 +215,7 @@ def un_prune_model(
 
     return fix_model(merged)
 
+
 def simple_merge(
     thetas: Dict[str, Dict],
     weights: Dict,
@@ -229,7 +230,16 @@ def simple_merge(
     futures = []
     sim = None
     sims = None
-    cos = tuple(["cosineA", "cosineB", "cosA_similarity_add_difference", "cosA_similarity_smooth_add_difference", "cosA_similarity_add_trained_difference", "cosA_similarity_smooth_add_trained_difference"])
+    cos = tuple(
+        [
+            "cosineA",
+            "cosineB",
+            "cosA_similarity_add_difference",
+            "cosA_similarity_smooth_add_difference",
+            "cosA_similarity_add_trained_difference",
+            "cosA_similarity_smooth_add_trained_difference",
+        ]
+    )
     if merge_mode in cos:
         sim = torch.nn.CosineSimilarity(dim=0)
         sims = np.array([], dtype=np.float64)
