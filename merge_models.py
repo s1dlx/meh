@@ -1,25 +1,10 @@
-import inspect
+import logging
 
 import click
 
-from sd_meh import merge_methods
-from sd_meh.merge import NUM_TOTAL_BLOCKS, merge_models, save_model
-
-merge_methods = dict(inspect.getmembers(merge_methods, inspect.isfunction))
-beta_methods = [
-    name
-    for name, fn in merge_methods.items()
-    if "beta" in inspect.getfullargspec(fn)[0]
-]
-
-
-def compute_weights(weights, base):
-    if not weights:
-        return [base] * NUM_TOTAL_BLOCKS
-    if "," in weights:
-        w_alpha = list(map(float, weights.split(",")))
-        if len(w_alpha) == NUM_TOTAL_BLOCKS:
-            return w_alpha
+from sd_meh.merge import merge_models, save_model
+from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
+from utils import MERGE_METHODS, weights_and_bases
 
 
 @click.command()
@@ -30,7 +15,7 @@ def compute_weights(weights, base):
     "-m",
     "--merging_method",
     "merge_mode",
-    type=click.Choice(list(merge_methods.keys()), case_sensitive=False),
+    type=click.Choice(list(MERGE_METHODS.keys()), case_sensitive=False),
 )
 @click.option("-wc", "--weights_clip", "weights_clip", is_flag=True)
 @click.option("-p", "--precision", "precision", type=int, default=16)
@@ -59,7 +44,73 @@ def compute_weights(weights, base):
     ),
     default="cpu",
 )
+@click.option(
+    "-wd",
+    "--work_device",
+    "work_device",
+    type=click.Choice(
+        ["cpu", "cuda"],
+        case_sensitive=False,
+    ),
+    default=None,
+)
 @click.option("-pr", "--prune", "prune", is_flag=True)
+@click.option(
+    "-bwpa",
+    "--block_weights_preset_alpha",
+    "block_weights_preset_alpha",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-bwpb",
+    "--block_weights_preset_beta",
+    "block_weights_preset_beta",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-j",
+    "--threads",
+    "threads",
+    type=int,
+    default=1,
+)
+@click.option(
+    "-bwpab",
+    "--block_weights_preset_alpha_b",
+    "block_weights_preset_alpha_b",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-bwpbb",
+    "--block_weights_preset_beta_b",
+    "block_weights_preset_beta_b",
+    type=click.Choice(list(BLOCK_WEIGHTS_PRESETS.keys()), case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-pal",
+    "--presets_alpha_lambda",
+    "presets_alpha_lambda",
+    type=float,
+    default=None,
+)
+@click.option(
+    "-pbl",
+    "--presets_beta_lambda",
+    "presets_beta_lambda",
+    type=float,
+    default=None,
+)
+@click.option(
+    "-ll",
+    "--logging_level",
+    "logging_level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+)
 def main(
     model_a,
     model_b,
@@ -76,18 +127,37 @@ def main(
     re_basin,
     re_basin_iterations,
     device,
+    work_device,
     prune,
+    block_weights_preset_alpha,
+    block_weights_preset_beta,
+    threads,
+    block_weights_preset_alpha_b,
+    block_weights_preset_beta_b,
+    presets_alpha_lambda,
+    presets_beta_lambda,
+    logging_level,
 ):
+    if logging_level:
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
+
     models = {"model_a": model_a, "model_b": model_b}
     if model_c:
         models["model_c"] = model_c
 
-    bases = {"alpha": base_alpha}
-    weights = {"alpha": compute_weights(weights_alpha, base_alpha)}
-
-    if merge_mode in beta_methods:
-        weights["beta"] = compute_weights(weights_beta, base_beta)
-        bases["beta"] = base_beta
+    weights, bases = weights_and_bases(
+        merge_mode,
+        weights_alpha,
+        base_alpha,
+        block_weights_preset_alpha,
+        weights_beta,
+        base_beta,
+        block_weights_preset_beta,
+        block_weights_preset_alpha_b,
+        block_weights_preset_beta_b,
+        presets_alpha_lambda,
+        presets_beta_lambda,
+    )
 
     merged = merge_models(
         models,
@@ -99,7 +169,9 @@ def main(
         re_basin,
         re_basin_iterations,
         device,
+        work_device,
         prune,
+        threads,
     )
 
     save_model(merged, output_path, output_format)
