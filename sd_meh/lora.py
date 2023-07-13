@@ -3,6 +3,8 @@ import json
 import safetensors.torch
 from scipy.sparse.linalg import svds
 import time
+import objsize
+
 
 CLAMP_QUANTILE = 0.99
 
@@ -38,7 +40,7 @@ def convert_lora_to_weights(lora_state_dict):
 
     return state_dict
 
-def convert_weights_to_lora(state_dict):
+def convert_weights_to_lora(state_dict, rank):
     # extract from merged weights
     lora_state_dict = {}
     with open("keydict.json", 'r') as kd:
@@ -55,8 +57,8 @@ def convert_weights_to_lora(state_dict):
                     weight = weight.flatten(start_dim=1)
                 else:
                     weight = weight.squeeze()
-            new_rank = 128
-            new_conv_rank = 128
+            new_rank = rank
+            new_conv_rank = rank
             module_new_rank = new_conv_rank if conv2d_3x3 else new_rank
             module_new_rank = min(module_new_rank, in_dim, out_dim)  # LoRA rank cannot exceed the original dim
 
@@ -88,8 +90,33 @@ def convert_weights_to_lora(state_dict):
 
     return lora_state_dict
 
-# testing routine
-# state_dict = convert_lora_to_weights(safetensors.torch.load_file(".safetensors"))
-# lora_state_dict = convert_weights_to_lora(state_dict)
-#
-# safetensors.torch.save_file(lora_state_dict, ".safetensors", None)
+def merge_lora(loras, ratios, rank):
+    assert len(loras) == len(ratios), "Wrong number of ratios"
+    lora_weights = []
+    merged_weights = {}
+    missing_keys = 0
+    for lora in loras:
+        lora_weights.append(convert_lora_to_weights(lora))
+    all_keys = set([key for state_dict in lora_weights for key in state_dict.keys()])
+    for key in all_keys:
+        merged_weights[key] = None
+        for n, weight in enumerate(lora_weights):
+            try:
+                if merged_weights[key] is None:
+                    merged_weights[key] = weight[key] * ratios[n]
+                else:
+                    merged_weights[key] += weight[key] * ratios[n]
+            except:
+                missing_keys += 1
+    if missing_keys:
+        print(f"Missing keys:{missing_keys}")
+    merged_lora = convert_weights_to_lora(merged_weights,rank)
+    # safetensors.torch.save_file(merged_lora,"C:/Users/mmeta/Downloads/mehtest.safetensors")
+    return merged_lora
+
+
+# lora_paths = ["",""]
+# loras = []
+# for path in lora_paths:
+#     loras.append(safetensors.torch.load_file(path))
+# merge_lora(loras,(1,1),32)
