@@ -4,3 +4,4 @@ safetensors
 torch
 tqdm
 tensordict
+scipy

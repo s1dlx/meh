@@ -411,13 +411,19 @@ def merge_key(
             raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
         merge_args = get_merge_method_args(current_bases, thetas, key, work_device)
-        merged_key = merge_method(**merge_args).to(device)
+
+        # dealing wiht pix2pix and inpainting models
+        if (a_size := merge_args["a"].size()) != (b_size := merge_args["b"].size()):
+            print(key, a_size, b_size)
+            if a_size[1] > b_size[1]:
+                merged_key = merge_args["a"]
+            else:
+                merged_key = merge_args["b"]
+        else:
+            merged_key = merge_method(**merge_args).to(device)
 
         if weights_clip:
-            t0 = thetas["model_a"][key]
-            t1 = thetas["model_b"][key]
-            threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
+            merged_key = clip_weights_key(thetas, merged_key, key)
 
         if precision == 16:
             merged_key = merged_key.half()
@@ -426,12 +432,18 @@ def merge_key(
 
 
 def clip_weights(thetas, merged):
-    for k, t0 in thetas["model_a"].items():
+    for k in thetas["model_a"].keys():
         if k in thetas["model_b"].keys():
-            t1 = thetas["model_b"][k]
-            th = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged.update({k: torch.minimum(torch.maximum(merged[k], -th), th)})
+            merged.update({k: clip_weights_key(thetas, merged[k], k)})
     return merged
+
+
+def clip_weights_key(thetas, merged_weights, key):
+    t0 = thetas["model_a"][key]
+    t1 = thetas["model_b"][key]
+    maximums = torch.maximum(t0, t1)
+    minimums = torch.minimum(t0, t1)
+    return torch.minimum(torch.maximum(merged_weights, minimums), maximums)
 
 
 @contextmanager
