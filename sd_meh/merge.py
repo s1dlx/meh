@@ -412,10 +412,7 @@ def merge_key(
         merged_key = merge_method(**merge_args).to(device)
 
         if weights_clip:
-            t0 = thetas["model_a"][key]
-            t1 = thetas["model_b"][key]
-            threshold = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged_key = torch.minimum(torch.maximum(merged_key, -threshold), threshold)
+            merged_key = clip_weights_key(thetas, merged_key, key)
 
         if precision == 16:
             merged_key = merged_key.half()
@@ -424,12 +421,18 @@ def merge_key(
 
 
 def clip_weights(thetas, merged):
-    for k, t0 in thetas["model_a"].items():
+    for k in thetas["model_a"].keys():
         if k in thetas["model_b"].keys():
-            t1 = thetas["model_b"][k]
-            th = torch.maximum(torch.abs(t0), torch.abs(t1))
-            merged.update({k: torch.minimum(torch.maximum(merged[k], -th), th)})
+            merged.update({k: clip_weights_key(thetas, merged[k], k)})
     return merged
+
+
+def clip_weights_key(thetas, merged_weights, key):
+    t0 = thetas["model_a"][key]
+    t1 = thetas["model_b"][key]
+    maximums = torch.maximum(t0, t1)
+    minimums = torch.minimum(t0, t1)
+    return torch.minimum(torch.maximum(merged_weights, minimums), maximums)
 
 
 @contextmanager
