@@ -29,7 +29,7 @@ You can have a look at the provided `merge_models.py` cli for an example on how 
 
 ## Changelog
 
-### 0.9.0
+### 0.9.1
 - bugfixes
 - support for pix2pix and inpainting models
 
