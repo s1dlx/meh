@@ -414,7 +414,6 @@ def merge_key(
 
         # dealing wiht pix2pix and inpainting models
         if (a_size := merge_args["a"].size()) != (b_size := merge_args["b"].size()):
-            print(key, a_size, b_size)
             if a_size[1] > b_size[1]:
                 merged_key = merge_args["a"]
             else:
