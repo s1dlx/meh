@@ -111,6 +111,7 @@ from sd_meh.utils import MERGE_METHODS, weights_and_bases
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
 )
+@click.option("-xl", "--sdxl", "sdxl", is_flag=True)
 def main(
     model_a,
     model_b,
@@ -137,6 +138,7 @@ def main(
     presets_alpha_lambda,
     presets_beta_lambda,
     logging_level,
+    sdxl,
 ):
     if logging_level:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
@@ -157,6 +159,7 @@ def main(
         block_weights_preset_beta_b,
         presets_alpha_lambda,
         presets_beta_lambda,
+        sdxl,
     )
 
     merged = merge_models(

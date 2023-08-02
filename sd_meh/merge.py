@@ -28,6 +28,10 @@ NUM_MID_BLOCK = 1
 NUM_OUTPUT_BLOCKS = 12
 NUM_TOTAL_BLOCKS = NUM_INPUT_BLOCKS + NUM_MID_BLOCK + NUM_OUTPUT_BLOCKS
 
+NUM_INPUT_BLOCKS_XL = 9
+NUM_OUTPUT_BLOCKS_XL = 9
+NUM_TOTAL_BLOCKS_XL = NUM_INPUT_BLOCKS_XL + NUM_MID_BLOCK + NUM_OUTPUT_BLOCKS_XL
+
 KEY_POSITION_IDS = ".".join(
     [
         "cond_stage_model",
@@ -144,6 +148,11 @@ def merge_models(
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
+    sdxl = (
+        "conditioner.embedders.1.model.transformer.resblocks.9.mlp.c_proj.weight"
+        in thetas["model_a"].keys()
+    )
+
     logging.info(f"start merging with {merge_mode} method")
     if re_basin:
         merged = rebasin_merge(
@@ -157,6 +166,7 @@ def merge_models(
             device=device,
             work_device=work_device,
             threads=threads,
+            sdxl=sdxl,
         )
     else:
         merged = simple_merge(
@@ -169,6 +179,7 @@ def merge_models(
             device=device,
             work_device=work_device,
             threads=threads,
+            sdxl=sdxl,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -221,6 +232,7 @@ def simple_merge(
     device: str = "cpu",
     work_device: Optional[str] = None,
     threads: int = 1,
+    sdxl: bool = False,
 ) -> Dict:
     futures = []
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
@@ -238,6 +250,7 @@ def simple_merge(
                     weights_clip,
                     device,
                     work_device,
+                    sdxl,
                 )
                 futures.append(future)
 
@@ -270,6 +283,7 @@ def rebasin_merge(
     device="cpu",
     work_device=None,
     threads: int = 1,
+    sdxl: bool = False,
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -299,6 +313,7 @@ def rebasin_merge(
             device,
             work_device,
             threads,
+            sdxl,
         )
 
         log_vram("simple merge done")
@@ -367,6 +382,7 @@ def merge_key(
     weights_clip: bool = False,
     device: str = "cpu",
     work_device: Optional[str] = None,
+    sdxl: bool = False,
 ) -> Optional[Tuple[str, Dict]]:
     if work_device is None:
         work_device = device
@@ -391,16 +407,22 @@ def merge_key(
             if "time_embed" in key:
                 weight_index = 0  # before input blocks
             elif ".out." in key:
-                weight_index = NUM_TOTAL_BLOCKS - 1  # after output blocks
+                weight_index = (
+                    NUM_TOTAL_BLOCKS_XL - 1 if sdxl else NUM_TOTAL_BLOCKS - 1
+                )  # after output blocks
             elif m := re_inp.search(key):
                 weight_index = int(m.groups()[0])
             elif re_mid.search(key):
-                weight_index = NUM_INPUT_BLOCKS
+                weight_index = NUM_INPUT_BLOCKS_XL if sdxl else NUM_INPUT_BLOCKS
             elif m := re_out.search(key):
-                weight_index = NUM_INPUT_BLOCKS + NUM_MID_BLOCK + int(m.groups()[0])
+                weight_index = (
+                    (NUM_INPUT_BLOCKS_XL if sdxl else NUM_INPUT_BLOCKS)
+                    + NUM_MID_BLOCK
+                    + int(m.groups()[0])
+                )
 
-            if weight_index >= NUM_TOTAL_BLOCKS:
-                raise ValueError(f"illegal block index {key}")
+            if weight_index >= (NUM_TOTAL_BLOCKS_XL if sdxl else NUM_TOTAL_BLOCKS):
+                raise ValueError(f"illegal block index {weight_index} for key {key}")
 
             if weight_index >= 0:
                 current_bases = {k: w[weight_index] for k, w in weights.items()}

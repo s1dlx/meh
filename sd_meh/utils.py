@@ -2,7 +2,7 @@ import inspect
 import logging
 
 from sd_meh import merge_methods
-from sd_meh.merge import NUM_TOTAL_BLOCKS
+from sd_meh.merge import NUM_TOTAL_BLOCKS, NUM_TOTAL_BLOCKS_XL
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
 
 MERGE_METHODS = dict(inspect.getmembers(merge_methods, inspect.isfunction))
@@ -13,25 +13,25 @@ BETA_METHODS = [
 ]
 
 
-def compute_weights(weights, base):
+def compute_weights(weights, base, sdxl: bool = False):
     if not weights:
-        return [base] * NUM_TOTAL_BLOCKS
+        return [base] * (NUM_TOTAL_BLOCKS_XL if sdxl else NUM_TOTAL_BLOCKS)
 
     if "," not in weights:
         return weights
 
     w_alpha = list(map(float, weights.split(",")))
-    if len(w_alpha) == NUM_TOTAL_BLOCKS:
+    if len(w_alpha) == (NUM_TOTAL_BLOCKS_XL if sdxl else NUM_TOTAL_BLOCKS):
         return w_alpha
 
 
-def assemble_weights_and_bases(preset, weights, base, greek_letter):
+def assemble_weights_and_bases(preset, weights, base, greek_letter, sdxl: bool = False):
     logging.info(f"Assembling {greek_letter} w&b")
     if preset:
         logging.info(f"Using {preset} preset")
         base, *weights = BLOCK_WEIGHTS_PRESETS[preset]
     bases = {greek_letter: base}
-    weights = {greek_letter: compute_weights(weights, base)}
+    weights = {greek_letter: compute_weights(weights, base, sdxl)}
 
     logging.info(f"base_{greek_letter}: {bases[greek_letter]}")
     logging.info(f"{greek_letter} weights: {weights[greek_letter]}")
@@ -70,12 +70,14 @@ def weights_and_bases(
     block_weights_preset_beta_b,
     presets_alpha_lambda,
     presets_beta_lambda,
+    sdxl: bool = False,
 ):
     weights, bases = assemble_weights_and_bases(
         block_weights_preset_alpha,
         weights_alpha,
         base_alpha,
         "alpha",
+        sdxl,
     )
 
     if block_weights_preset_alpha_b:
@@ -85,6 +87,7 @@ def weights_and_bases(
             None,
             None,
             "alpha",
+            sdxl,
         )
         weights, bases = interpolate_presets(
             weights,
@@ -101,6 +104,7 @@ def weights_and_bases(
             weights_beta,
             base_beta,
             "beta",
+            sdxl,
         )
 
         if block_weights_preset_beta_b:
@@ -110,6 +114,7 @@ def weights_and_bases(
                 None,
                 None,
                 "beta",
+                sdxl,
             )
             weights, bases = interpolate_presets(
                 weights,
