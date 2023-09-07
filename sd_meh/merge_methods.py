@@ -17,6 +17,7 @@ __all__ = [
     "similarity_add_difference",
     "distribution_crossover",
     "ties_add_difference",
+    "complex_rotate",
 ]
 
 
