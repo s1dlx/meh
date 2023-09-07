@@ -212,9 +212,7 @@ def filter_top_k(a: Tensor, k: float):
     return a * top_k_filter
 
 
-def complex_rotate(
-    a: Tensor, b: Tensor, alpha: float, **kwargs
-):
+def complex_rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     a = a.float()
     b = b.float()
     rotated_a = torch.e ** (1j * torch.pi * a / torch.norm(a))
