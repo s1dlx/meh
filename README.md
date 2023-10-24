@@ -29,6 +29,10 @@ You can have a look at the provided `merge_models.py` cli for an example on how 
 
 ## Changelog
 
+### 0.9.1 ... 0.9.3
+- bugfixes
+- support for pix2pix and inpainting models
+
 ### 0.8.0
 - add `-bwpab, --block_weights_preset_alpha_b"` and `-pal, --presets_alpha_lambda` for presets interpolation (same for `beta`)
 - add `-ll, --logging_level`, default to `INFO`
