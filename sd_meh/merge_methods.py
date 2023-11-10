@@ -213,10 +213,10 @@ def filter_top_k(a: Tensor, k: float):
 
 
 def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
-    if len(a.shape) <= 1:
+    if len(a.shape) == 0:
         return a
 
-    # make sure matrices are at most 2D
+    # make sure matrices are 2D
     a_reshape = a.reshape(-1, a.shape[-1]).float()
     b_reshape = b.reshape(-1, b.shape[-1]).float()
 
