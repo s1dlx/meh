@@ -1,6 +1,5 @@
 import inspect
 import logging
-import torch
 
 from sd_meh import merge_methods
 from sd_meh.merge import NUM_TOTAL_BLOCKS
