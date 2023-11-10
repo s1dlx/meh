@@ -211,7 +211,7 @@ def filter_top_k(a: Tensor, k: float):
     return a * top_k_filter
 
 
-def orthogonal_rotation(a: Tensor, b: Tensor, **kwargs):
+def rotate(a: Tensor, b: Tensor, **kwargs):
     if a.shape == ():
         return a
     a_reshape = a.reshape(-1, a.shape[-1]).float()
