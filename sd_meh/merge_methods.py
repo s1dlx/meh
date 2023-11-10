@@ -209,3 +209,14 @@ def filter_top_k(a: Tensor, k: float):
     k_value, _ = torch.kthvalue(torch.abs(a.flatten()).float(), k)
     top_k_filter = (torch.abs(a) >= k_value).float()
     return a * top_k_filter
+
+
+def orthogonal_rotation(a: Tensor, b: Tensor, **kwargs):
+    if a.shape == ():
+        return a
+
+    a_reshape = a.reshape(-1, a.shape[-1]).float()
+    b_reshape = b.reshape(-1, b.shape[-1]).float()
+    U, _, V = torch.svd(torch.matmul(a_reshape.T, b_reshape))
+    Q = torch.matmul(U, V.T)
+    return torch.matmul(a_reshape, Q).reshape_as(a)
