@@ -220,7 +220,13 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     b_reshape = b.reshape(-1, b.shape[-1]).float()
 
     u, _, v = torch.svd(torch.matmul(a_reshape.T, b_reshape))
-    from .utils import interpolate_cayley
     transform = interpolate_cayley(torch.matmul(u, v.T), alpha)
 
     return torch.matmul(a_reshape, transform).reshape_as(a).to(dtype=a.dtype)
+
+
+def interpolate_cayley(matrix: Tensor, power: float):
+    identity = torch.eye(matrix.size(0), dtype=matrix.dtype, device=matrix.device)
+    cayley = (identity - matrix) @ torch.inverse(identity + matrix)
+    scaled_cayley = cayley * power
+    return torch.inverse(identity - scaled_cayley) @ (identity + scaled_cayley)
