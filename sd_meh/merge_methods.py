@@ -211,11 +211,16 @@ def filter_top_k(a: Tensor, k: float):
     return a * top_k_filter
 
 
-def rotate(a: Tensor, b: Tensor, **kwargs):
-    if a.shape == ():
+def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
+    if len(a.shape) <= 1:
         return a
+
+    # make sure matrices are at most 2D
     a_reshape = a.reshape(-1, a.shape[-1]).float()
     b_reshape = b.reshape(-1, b.shape[-1]).float()
-    U, _, V = torch.svd(torch.matmul(a_reshape.T, b_reshape))
-    Q = torch.matmul(U, V.T)
-    return torch.matmul(a_reshape, Q).reshape_as(a).to(dtype=a.dtype)
+
+    u, _, v = torch.svd(torch.matmul(a_reshape.T, b_reshape))
+    from .utils import interpolate_cayley
+    transform = interpolate_cayley(torch.matmul(u, v.T), alpha)
+
+    return torch.matmul(a_reshape, transform).reshape_as(a).to(dtype=a.dtype)
