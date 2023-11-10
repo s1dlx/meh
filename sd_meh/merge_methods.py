@@ -217,13 +217,11 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     if len(a.shape) == 0:
         return a
 
-    shape = (a.shape[-1], -1)
+    a_reshape = a.reshape(-1, a.shape[-1]).float()
+    b_reshape = b.reshape(-1, a.shape[-1]).float()
 
-    # make sure matrices are 2D
-    a_reshape = a.reshape(*shape).float()
-    b_reshape = b.reshape(*shape).float()
-
-    u, _, v = torch.svd(torch.matmul(a_reshape.T, b_reshape))
+    cross_covariance = torch.matmul(a_reshape.T, b_reshape)
+    u, _, v = torch.svd(cross_covariance)
     transform = torch.matmul(u, v.T)
-
-    return torch.matmul(a_reshape, transform).reshape_as(a).to(dtype=a.dtype)
+    rotated_a = torch.matmul(a_reshape, transform)
+    return rotated_a.reshape_as(a).to(dtype=a.dtype)
