@@ -1,6 +1,7 @@
 import math
 from typing import Tuple
-
+import scipy
+import numpy as np
 import torch
 from torch import Tensor
 
@@ -216,18 +217,13 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     if len(a.shape) == 0:
         return a
 
+    shape = (a.shape[-1], -1)
+
     # make sure matrices are 2D
-    a_reshape = a.reshape(-1, a.shape[-1]).float()
-    b_reshape = b.reshape(-1, b.shape[-1]).float()
+    a_reshape = a.reshape(*shape).float()
+    b_reshape = b.reshape(*shape).float()
 
     u, _, v = torch.svd(torch.matmul(a_reshape.T, b_reshape))
-    transform = interpolate_cayley(torch.matmul(u, v.T), alpha)
+    transform = torch.matmul(u, v.T)
 
     return torch.matmul(a_reshape, transform).reshape_as(a).to(dtype=a.dtype)
-
-
-def interpolate_cayley(matrix: Tensor, power: float):
-    identity = torch.eye(matrix.size(0), dtype=matrix.dtype, device=matrix.device)
-    cayley = (identity - matrix) @ torch.inverse(identity + matrix)
-    scaled_cayley = cayley * power
-    return torch.inverse(identity - scaled_cayley) @ (identity + scaled_cayley)
