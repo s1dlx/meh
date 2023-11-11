@@ -218,7 +218,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
 
     a_2d = a.reshape(-1, a.shape[-1]).float()
     b_2d = b.reshape(-1, a.shape[-1]).float()
-    u, _, v = torch.svd(b_2d.T @ a_2d)
+    u, _, v = torch.svd(a_2d.T @ b_2d)
     del _, b_2d
 
     if alpha == round(alpha):
