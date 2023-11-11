@@ -228,8 +228,8 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     else:
         # remove flips: make det(transform) > 0
         # otherwise orthogonal_power(transform, alpha) will have a complex component
-        d = torch.ones(a_2d.shape[1], device=a_2d.device)
-        d[-1] = torch.linalg.det(u) * torch.linalg.det(v.T)
+        d = torch.eye(a_2d.shape[1], device=a_2d.device)
+        d[-1, -1] = torch.linalg.det(u) * torch.linalg.det(v.T)
         transform = u @ d @ v.T
         del d
         transform.copy_(fractional_matrix_power(transform, alpha))
