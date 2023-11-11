@@ -1,7 +1,6 @@
 import math
 from typing import Tuple
 import scipy
-import numpy as np
 import torch
 from torch import Tensor
 
@@ -217,11 +216,32 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     if len(a.shape) == 0:
         return a
 
-    a_reshape = a.reshape(-1, a.shape[-1]).float()
-    b_reshape = b.reshape(-1, a.shape[-1]).float()
+    a_2d = a.reshape(-1, a.shape[-1]).float()
+    b_2d = b.reshape(-1, a.shape[-1]).float()
+    u, _, v = torch.svd(b_2d.T @ a_2d)
+    del _, b_2d
 
-    cross_covariance = torch.matmul(a_reshape.T, b_reshape)
-    u, _, v = torch.svd(cross_covariance)
-    transform = torch.matmul(u, v.T)
-    rotated_a = torch.matmul(a_reshape, transform)
-    return rotated_a.reshape_as(a).to(dtype=a.dtype)
+    if alpha == round(alpha):
+        transform = u @ v.T
+        if alpha != 1:
+            transform.copy_(torch.linalg.matrix_power(transform, round(alpha)))
+    else:
+        # remove flips: make det(transform) > 0
+        # otherwise orthogonal_power(transform, alpha) will have a complex component
+        d = torch.ones(a_2d.shape[1], device=a_2d.device)
+        d[-1] = torch.linalg.det(u) * torch.linalg.det(v.T)
+        transform = u @ d @ v.T
+        del d
+        transform.copy_(fractional_matrix_power(transform, alpha))
+    del u, v
+
+    a_2d.copy_(a_2d @ transform)
+    return a_2d.reshape_as(a).to(dtype=a.dtype)
+
+
+def fractional_matrix_power(matrix: Tensor, power: float):
+    eigenvalues, eigenvectors = torch.linalg.eig(matrix)
+    eigenvalues.copy_(eigenvalues ** power)
+    return (
+        eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.T
+    ).real.to(dtype=matrix.dtype)
