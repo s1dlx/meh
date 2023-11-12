@@ -214,23 +214,20 @@ def filter_top_k(a: Tensor, k: float):
 
 
 def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
-    if len(a.shape) == 0:
+    if len(a.shape) == 0 or (a == b).all():
         return a
 
-    a_2d = a.reshape(-1, a.shape[-1]).float()
-    b_2d = b.reshape(-1, a.shape[-1]).float()
-    u, sigma, v = torch.svd(a_2d.T @ b_2d)
-    transform = u @ v.T
+    a_2d = a.reshape(-1, a.shape[-1]).double()
+    b_2d = b.reshape(-1, b.shape[-1]).double()
+    u, _, v_t = torch.linalg.svd(torch.matmul(a_2d.T, b_2d))
+    transform = torch.matmul(u, v_t)
 
     if alpha == round(alpha):
         if alpha != 1:
             torch.linalg.matrix_power(transform, round(alpha), out=transform)
     else:
-        if torch.linalg.det(transform) < 0:
-            # remove reflection, otherwise we get a complex component
-            u[:, -1] *= -1
-            torch.matmul(u, v.T, out=transform)
-
+        u[:, -1] *= torch.det(transform)
+        torch.matmul(u, v_t, out=transform)
         transform.copy_(fractional_matrix_power(transform, alpha))
 
     torch.matmul(a_2d, transform, out=a_2d)
@@ -240,6 +237,8 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
 def fractional_matrix_power(matrix: Tensor, power: float):
     eigenvalues, eigenvectors = torch.linalg.eig(matrix)
     eigenvalues.pow_(power)
-    return (
-        eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.T
-    ).real.to(dtype=matrix.dtype)
+    result = (
+        eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.H
+    )
+    print(f"complex error: {torch.linalg.norm(result.imag)}")
+    return result.real.to(dtype=matrix.dtype)
