@@ -238,5 +238,4 @@ def fractional_matrix_power(matrix: Tensor, power: float):
     eigenvalues, eigenvectors = torch.linalg.eig(matrix.double())
     eigenvalues.pow_(power)
     result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
-    error = torch.linalg.vector_norm(result.imag)
     return result.real.to(dtype=matrix.dtype)
