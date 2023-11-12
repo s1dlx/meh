@@ -225,18 +225,13 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         u[:, -1] /= torch.det(u) * torch.det(v_t)
 
     transform = rotation = u @ v_t
-    if beta != 0:
-        # remove the full rotation used to apply beta
-        alpha -= 1
-
     if alpha_is_float:
         transform = fractional_matrix_power(transform, alpha)
     elif alpha != 1:
         transform = torch.linalg.matrix_power(transform, round(alpha))
 
     if beta != 0:
-        a_2d = weighted_sum(a_2d @ rotation, b_2d, beta)
-        # alpha was decremented, no need to apply @ rotation.T
+        a_2d = weighted_sum(a_2d, b_2d @ rotation.T, beta)
 
     a_2d @= transform
     return a_2d.reshape_as(a).to(dtype=a.dtype)
