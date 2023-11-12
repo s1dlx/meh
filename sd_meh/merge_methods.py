@@ -1,7 +1,5 @@
 import math
-import sys
 from typing import Tuple
-from kmeans_pytorch import kmeans
 import torch
 from torch import Tensor
 

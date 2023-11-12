@@ -420,8 +420,6 @@ def merge_key(
                 merged_key = merge_args["b"]
         else:
             merged_key = merge_method(**merge_args).to(device)
-            gc.collect()
-            torch.cuda.empty_cache()
 
         if weights_clip:
             merged_key = clip_weights_key(thetas, merged_key, key)
