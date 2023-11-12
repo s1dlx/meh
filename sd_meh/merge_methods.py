@@ -231,15 +231,11 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
         transform.copy_(fractional_matrix_power(transform, alpha))
 
     torch.matmul(a_2d.float(), transform, out=a_2d)
-    res = a_2d.reshape_as(a).to(dtype=a.dtype)
-    return res
+    return a_2d.reshape_as(a).to(dtype=a.dtype)
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
     eigenvalues, eigenvectors = torch.linalg.eig(matrix)
     eigenvalues.pow_(power)
-    result = (
-        eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.H
-    )
-    print(f"complex error: {torch.linalg.norm(result.imag)}")
+    result = eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.H
     return result.real
