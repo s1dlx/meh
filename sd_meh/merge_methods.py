@@ -220,22 +220,23 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
     a_2d = a.reshape(-1, a.shape[-1]).float()
     b_2d = b.reshape(-1, b.shape[-1]).float()
     u, _, v_t = torch.linalg.svd(torch.matmul(a_2d.T, b_2d), driver="gesvd" if a.is_cuda else None)
-    transform = torch.matmul(u, v_t)
 
     if alpha == round(alpha):
+        transform = torch.matmul(u, v_t)
         if alpha != 1:
-            torch.linalg.matrix_power(transform, round(alpha), out=transform)
+            transform = torch.linalg.matrix_power(transform, round(alpha))
     else:
-        u[:, -1] *= torch.det(transform)
-        transform.copy_(torch.matmul(u, v_t))
-        transform.copy_(fractional_matrix_power(transform, alpha))
+        u[:, -1] /= torch.det(u) * torch.det(v_t)
+        transform = torch.matmul(u, v_t)
+        transform = fractional_matrix_power(transform, alpha)
 
-    torch.matmul(a_2d.float(), transform, out=a_2d)
+    a_2d = torch.matmul(a_2d, transform)
     return a_2d.reshape_as(a).to(dtype=a.dtype)
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
-    eigenvalues, eigenvectors = torch.linalg.eig(matrix)
+    eigenvalues, eigenvectors = torch.linalg.eig(matrix.double())
     eigenvalues.pow_(power)
-    result = eigenvectors @ torch.diag(eigenvalues) @ eigenvectors.H
-    return result.real
+    result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
+    error = torch.linalg.vector_norm(result.imag)
+    return result.real.to(dtype=matrix.dtype)
