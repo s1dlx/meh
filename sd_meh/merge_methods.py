@@ -219,7 +219,8 @@ def rotate(a: Tensor, b: Tensor, alpha: float, **kwargs):
 
     a_2d = a.reshape(-1, a.shape[-1]).float()
     b_2d = b.reshape(-1, b.shape[-1]).float()
-    u, _, v_t = torch.linalg.svd(torch.matmul(a_2d.T, b_2d), driver="gesvd" if a.is_cuda else None)
+    svd_driver = "gesvd" if a.is_cuda else None
+    u, _, v_t = torch.linalg.svd(torch.matmul(a_2d.T, b_2d), driver=svd_driver)
 
     if alpha == round(alpha):
         transform = torch.matmul(u, v_t)
