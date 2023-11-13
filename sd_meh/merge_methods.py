@@ -215,8 +215,27 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     if len(a.shape) == 0 or (a == b).all():
         return a
 
-    a_2d = a.reshape(-1, a.shape[-1]).float()
-    b_2d = b.reshape(-1, b.shape[-1]).float()
+    if len(a.shape) == 4:  # conv
+        # ideally we should stack each n x n kernel into 1D for more freedom
+        # however, this brings the number of dimensions of the covariance matrix
+        #   to a very high number for some layers (> 10k x 10k)
+        # SVD is not practical in these cases
+        # so instead, we break down the conv kernel into individual input features
+        #   to lock their angles and distances along with the
+        a_2d = a.permute(0, 2, 3, 1).reshape(-1, a.shape[1]).float()
+        b_2d = b.permute(0, 2, 3, 1).reshape(-1, a.shape[1]).float()
+
+        def reshape_fn(m):
+            m = m.reshape(a.shape[0], a.shape[2], a.shape[3], a.shape[1])
+            m = m.permute(0, 3, 1, 2)
+            return m.contiguous()  # apparently needed for saving
+    else:
+        a_2d = a.reshape(-1, a.shape[-1]).float()
+        b_2d = b.reshape(-1, b.shape[-1]).float()
+
+        def reshape_fn(m):
+            return m.reshape_as(a)
+
     svd_driver = "gesvd" if a.is_cuda else None
     u, _, v_t = torch.linalg.svd(a_2d.T @ b_2d, driver=svd_driver)
 
@@ -234,7 +253,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         a_2d = weighted_sum(a_2d, b_2d @ rotation.T, beta)
 
     a_2d @= transform
-    return a_2d.reshape_as(a).to(dtype=a.dtype)
+    return reshape_fn(a_2d).to(dtype=a.dtype)
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
