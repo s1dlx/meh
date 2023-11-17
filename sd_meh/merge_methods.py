@@ -258,7 +258,11 @@ def fractional_matrix_power(matrix: Tensor, power: float):
 
 
 def sample_ellipsis(a, b, t):
-    return torch.column_stack((a, b)) @ torch.tensor([
-        math.sin(t),
-        math.cos(t),
-    ], dtype=a.dtype, device=a.device)
+    return torch.column_stack((a, b)) @ torch.tensor(
+        [
+            math.sin(t),
+            math.cos(t),
+        ],
+        dtype=a.dtype,
+        device=a.device,
+    )
