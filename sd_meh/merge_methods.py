@@ -1,7 +1,4 @@
-import functools
 import math
-import operator
-
 import torch
 from torch import Tensor
 from typing import Tuple
@@ -218,8 +215,8 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     if alpha == 0 and beta == 0:
         return a
 
-    is_large_conv = len(a.shape) == 4 #and a.shape[-1] != 1
-    if len(a.shape) == 0 or is_large_conv or torch.allclose(a, b):
+    is_conv = len(a.shape) == 4 #and a.shape[-1] != 1
+    if len(a.shape) == 0 or is_conv or torch.allclose(a, b):
         return weighted_sum(a, b, beta)
 
     if len(a.shape) == 4:
@@ -227,25 +224,25 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     else:
         shape_2d = (-1, a.shape[-1])
 
-    a_neurons = a.reshape(*shape_2d)
-    b_neurons = b.reshape(*shape_2d)
+    a_view = a.view(*shape_2d)
+    b_view = b.view(*shape_2d)
+
+    a_centroid = a_view.mean(0)
+    b_centroid = b_view.mean(0)
+    new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
+    a_neurons_large = a_view - a_centroid
+    b_neurons_large = b_view - b_centroid
 
     # reciprocal function used to reduce the dimensionality of neurons
     # this allows us to solve the procrustes problem on:
     # - all dimensions of small neurons (< 2560)
     # - a fraction of dimensions for larger neurons (>= 2560)
     # for a tradeoff between more quality and longer merge time
-    similarity_threshold = 1#min(1.0, 2 / a_neurons.shape[1] + 0.999)
+    similarity_threshold = min(1.0, 2 / a_neurons_large.shape[1] + 0.999)
 
-    neuron_dims = reduce_dimensions(a_neurons, b_neurons, similarity_threshold)
-    a_neurons = a_neurons[:, neuron_dims].double()
-    b_neurons = b_neurons[:, neuron_dims].double()
-
-    a_centroid = a_neurons.mean(0)
-    b_centroid = b_neurons.mean(0)
-    new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
-    a_neurons -= a_centroid
-    b_neurons -= b_centroid
+    rotation_dims = reduce_dimensions(a_neurons_large, b_neurons_large, similarity_threshold)
+    a_neurons = a_neurons_large[:, rotation_dims].double()
+    b_neurons = b_neurons_large[:, rotation_dims].double()
 
     svd_driver = "gesvd" if a.is_cuda else None
     u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
@@ -264,11 +261,16 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         a_neurons = weighted_sum(a_neurons, b_neurons @ rotation.T, beta)
 
     a_neurons @= transform
-    a_neurons += new_centroid
 
-    a.view(*shape_2d)[:, neuron_dims] = a_neurons.to(a.dtype)
-    # a_2d_large[:, ~mask] = weighted_sum(a_2d_large[:, ~mask], b_2d_large[:, ~mask], beta)
-    return a
+    res = torch.empty_like(a_neurons_large)
+    res[:, rotation_dims] = a_neurons.to(res.dtype)
+    res[:, ~rotation_dims] = weighted_sum(
+        a_neurons_large[:, ~rotation_dims],
+        b_neurons_large[:, ~rotation_dims],
+        beta,
+    )
+    res += new_centroid
+    return res.reshape_as(a)
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
