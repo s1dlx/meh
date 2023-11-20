@@ -1,4 +1,6 @@
+import functools
 import math
+import operator
 import torch
 from torch import Tensor
 from typing import Tuple
@@ -215,58 +217,78 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     if alpha == 0 and beta == 0:
         return a
 
-    is_conv = len(a.shape) == 4 #and a.shape[-1] != 1
+    is_conv = len(a.shape) == 4 and a.shape[-1] != 1
     if len(a.shape) == 0 or is_conv or torch.allclose(a, b):
         return weighted_sum(a, b, beta)
 
     if len(a.shape) == 4:
-        shape_2d = (-1, a.shape[1])
+        shape_2d = (-1, functools.reduce(operator.mul, a.shape[1:]))
     else:
         shape_2d = (-1, a.shape[-1])
 
-    a_view = a.view(*shape_2d)
-    b_view = b.view(*shape_2d)
+    a_neurons_large = a.reshape(*shape_2d).double()
+    b_neurons_large = b.reshape(*shape_2d).double()
 
-    a_centroid = a_view.mean(0)
-    b_centroid = b_view.mean(0)
+    a_centroid = a_neurons_large.mean(0)
+    b_centroid = b_neurons_large.mean(0)
     new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
-    a_neurons_large = a_view - a_centroid
-    b_neurons_large = b_view - b_centroid
+    a_neurons_large -= a_centroid
+    b_neurons_large -= b_centroid
+
+    if len(a.shape) == 1 or len(a.shape) == 2 and a.shape[0] == 1:
+        print(a.shape, "is 1D")
+        return new_centroid.reshape_as(a)
 
     # reciprocal function used to reduce the dimensionality of neurons
+    # it determines the cosine similarity threshold to drop dimensions
     # this allows us to solve the procrustes problem on:
     # - all dimensions of small neurons (< 2560)
     # - a fraction of dimensions for larger neurons (>= 2560)
     # for a tradeoff between more quality and longer merge time
-    similarity_threshold = min(1.0, 2 / a_neurons_large.shape[1] + 0.999)
+    threshold = 1#min(1.0, 0.125 / shape_2d[1] + 0.9999)
 
-    rotation_dims = reduce_dimensions(a_neurons_large, b_neurons_large, similarity_threshold)
-    a_neurons = a_neurons_large[:, rotation_dims].double()
-    b_neurons = b_neurons_large[:, rotation_dims].double()
+    dims_to_rotate = get_irreducible_dimensions(
+        a_neurons_large,
+        b_neurons_large,
+        threshold,
+        max_dims=5760,  # dims of one of the large layers
+    )
+    # rotation_dims[:] = True
+    a_neurons = a_neurons_large[:, dims_to_rotate]
+    b_neurons = b_neurons_large[:, dims_to_rotate]
 
     svd_driver = "gesvd" if a.is_cuda else None
     u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
 
     alpha_is_float = alpha != round(alpha)
     if alpha_is_float:
+        # cancel reflection. without this, eigenvalues often have a complex component
+        #   and then we can't obtain a valid dtype for the merge
         u[:, -1] /= torch.det(u) * torch.det(v_t)
 
     transform = rotation = u @ v_t
     if alpha_is_float:
         transform = fractional_matrix_power(transform, alpha)
+    elif alpha == 0:
+        transform = torch.eye(
+            len(transform),
+            dtype=transform.dtype,
+            device=transform.device,
+        )
     elif alpha != 1:
         transform = torch.linalg.matrix_power(transform, round(alpha))
 
     if beta != 0:
+        # interpolate the relationship between the neurons
         a_neurons = weighted_sum(a_neurons, b_neurons @ rotation.T, beta)
 
     a_neurons @= transform
 
     res = torch.empty_like(a_neurons_large)
-    res[:, rotation_dims] = a_neurons.to(res.dtype)
-    res[:, ~rotation_dims] = weighted_sum(
-        a_neurons_large[:, ~rotation_dims],
-        b_neurons_large[:, ~rotation_dims],
+    res[:, dims_to_rotate] = a_neurons.to(res.dtype)
+    res[:, ~dims_to_rotate] = weighted_sum(
+        a_neurons_large[:, ~dims_to_rotate],
+        b_neurons_large[:, ~dims_to_rotate],
         beta,
     )
     res += new_centroid
@@ -291,14 +313,20 @@ def sample_ellipsis(a, b, t):
     )
 
 
-def reduce_dimensions(a_neurons, b_neurons, threshold):
+def get_irreducible_dimensions(a_neurons, b_neurons, threshold, max_dims):
     a_unit = a_neurons / torch.linalg.vector_norm(a_neurons, dim=0, keepdim=True)
     b_unit = b_neurons / torch.linalg.vector_norm(b_neurons, dim=0, keepdim=True)
-    neuron_similarities = torch.sum(a_unit * b_unit, dim=0)
+    similarities = torch.sum(a_unit * b_unit, dim=0)
 
-    neuron_dims = torch.ones(a_neurons.shape[1], dtype=torch.bool)
-    indices_to_disable = torch.nonzero(neuron_similarities >= threshold)
-    neuron_dims[indices_to_disable] = False
+    neuron_dims = torch.zeros(a_neurons.shape[1], dtype=torch.bool)
+    indices_to_keep = torch.nonzero(similarities < threshold)
+    if len(indices_to_keep) > max_dims:
+        sorted_indices = sorted(
+            indices_to_keep,
+            key=similarities.__getitem__,
+        )
+        indices_to_keep = sorted_indices[:max_dims]
+    neuron_dims[indices_to_keep] = True
 
-    print(f"\n{a_neurons.shape[1]} -> {len(torch.nonzero(neuron_dims))} by {threshold}")
+    print(f"\n{a_neurons.shape[1]} -> {len(torch.nonzero(neuron_dims))}, {100 * len(torch.nonzero(neuron_dims)) / a_neurons.shape[1]:.2f}% under {threshold}, max {float(max(similarities[i] for i in indices_to_keep))}")
     return neuron_dims
