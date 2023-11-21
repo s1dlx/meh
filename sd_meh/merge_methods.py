@@ -226,36 +226,17 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     else:
         shape_2d = (-1, a.shape[-1])
 
-    a_neurons_large = a.reshape(*shape_2d).double()
-    b_neurons_large = b.reshape(*shape_2d).double()
+    a_neurons = a.reshape(*shape_2d).double()
+    b_neurons = b.reshape(*shape_2d).double()
 
-    a_centroid = a_neurons_large.mean(0)
-    b_centroid = b_neurons_large.mean(0)
+    a_centroid = a_neurons.mean(0)
+    b_centroid = b_neurons.mean(0)
     new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
-    a_neurons_large -= a_centroid
-    b_neurons_large -= b_centroid
+    a_neurons -= a_centroid
+    b_neurons -= b_centroid
 
     if len(a.shape) == 1 or len(a.shape) == 2 and a.shape[0] == 1:
-        print(a.shape, "is 1D")
         return new_centroid.reshape_as(a)
-
-    # reciprocal function used to reduce the dimensionality of neurons
-    # it determines the cosine similarity threshold to drop dimensions
-    # this allows us to solve the procrustes problem on:
-    # - all dimensions of small neurons (< 2560)
-    # - a fraction of dimensions for larger neurons (>= 2560)
-    # for a tradeoff between more quality and longer merge time
-    threshold = 1#min(1.0, 0.125 / shape_2d[1] + 0.9999)
-
-    dims_to_rotate = get_irreducible_dimensions(
-        a_neurons_large,
-        b_neurons_large,
-        threshold,
-        max_dims=5760,  # dims of one of the large layers
-    )
-    # rotation_dims[:] = True
-    a_neurons = a_neurons_large[:, dims_to_rotate]
-    b_neurons = b_neurons_large[:, dims_to_rotate]
 
     svd_driver = "gesvd" if a.is_cuda else None
     u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
@@ -283,16 +264,8 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         a_neurons = weighted_sum(a_neurons, b_neurons @ rotation.T, beta)
 
     a_neurons @= transform
-
-    res = torch.empty_like(a_neurons_large)
-    res[:, dims_to_rotate] = a_neurons.to(res.dtype)
-    res[:, ~dims_to_rotate] = weighted_sum(
-        a_neurons_large[:, ~dims_to_rotate],
-        b_neurons_large[:, ~dims_to_rotate],
-        beta,
-    )
-    res += new_centroid
-    return res.reshape_as(a)
+    a_neurons += new_centroid
+    return a_neurons.reshape_as(a).to(a.dtype)
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
@@ -311,22 +284,3 @@ def sample_ellipsis(a, b, t):
         dtype=a.dtype,
         device=a.device,
     )
-
-
-def get_irreducible_dimensions(a_neurons, b_neurons, threshold, max_dims):
-    a_unit = a_neurons / torch.linalg.vector_norm(a_neurons, dim=0, keepdim=True)
-    b_unit = b_neurons / torch.linalg.vector_norm(b_neurons, dim=0, keepdim=True)
-    similarities = torch.sum(a_unit * b_unit, dim=0)
-
-    neuron_dims = torch.zeros(a_neurons.shape[1], dtype=torch.bool)
-    indices_to_keep = torch.nonzero(similarities < threshold)
-    if len(indices_to_keep) > max_dims:
-        sorted_indices = sorted(
-            indices_to_keep,
-            key=similarities.__getitem__,
-        )
-        indices_to_keep = sorted_indices[:max_dims]
-    neuron_dims[indices_to_keep] = True
-
-    print(f"\n{a_neurons.shape[1]} -> {len(torch.nonzero(neuron_dims))}, {100 * len(torch.nonzero(neuron_dims)) / a_neurons.shape[1]:.2f}% under {threshold}, max {float(max(similarities[i] for i in indices_to_keep))}")
-    return neuron_dims
