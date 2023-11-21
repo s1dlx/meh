@@ -269,7 +269,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
 
 
 def fractional_matrix_power(matrix: Tensor, power: float):
-    eigenvalues, eigenvectors = torch.linalg.eig(matrix.double())
+    eigenvalues, eigenvectors = torch.linalg.eig(matrix)
     eigenvalues.pow_(power)
     result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
     return result.real.to(dtype=matrix.dtype)
