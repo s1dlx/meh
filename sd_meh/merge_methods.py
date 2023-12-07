@@ -218,7 +218,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         return a
 
     is_conv = len(a.shape) == 4 and a.shape[-1] != 1
-    if len(a.shape) == 0 or is_conv or torch.allclose(a, b):
+    if len(a.shape) == 0 or is_conv or torch.allclose(a.half(), b.half()):
         return weighted_sum(a, b, beta)
 
     if len(a.shape) == 4:
@@ -232,11 +232,11 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     a_centroid = a_neurons.mean(0)
     b_centroid = b_neurons.mean(0)
     new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
-    a_neurons -= a_centroid
-    b_neurons -= b_centroid
-
     if len(a.shape) == 1 or len(a.shape) == 2 and a.shape[0] == 1:
         return new_centroid.reshape_as(a)
+
+    a_neurons -= a_centroid
+    b_neurons -= b_centroid
 
     svd_driver = "gesvd" if a.is_cuda else None
     u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
