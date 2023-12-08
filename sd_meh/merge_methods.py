@@ -239,7 +239,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     b_neurons -= b_centroid
 
     svd_driver = "gesvd" if a.is_cuda else None
-    u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
+    u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, full_matrices=False, driver=svd_driver)
 
     alpha_is_float = alpha != round(alpha)
     if alpha_is_float:
