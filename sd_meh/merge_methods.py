@@ -239,7 +239,9 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     b_neurons -= b_centroid
 
     svd_driver = "gesvd" if a.is_cuda else None
-    u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, full_matrices=False, driver=svd_driver)
+    u, _, v_t = torch.linalg.svd(
+        a_neurons.T @ b_neurons, full_matrices=False, driver=svd_driver
+    )
 
     alpha_is_float = alpha != round(alpha)
     if alpha_is_float:
@@ -248,6 +250,11 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         u[:, -1] /= torch.det(u) * torch.det(v_t)
 
     transform = rotation = u @ v_t
+    print("shape:", transform.shape)
+    det = torch.det(transform)
+    if torch.abs(det.abs() - 1) > 1e-6:
+        print("determinant error:", det)
+
     if alpha_is_float:
         transform = fractional_matrix_power(transform, alpha)
     elif alpha == 0:
@@ -272,6 +279,8 @@ def fractional_matrix_power(matrix: Tensor, power: float):
     eigenvalues, eigenvectors = torch.linalg.eig(matrix)
     eigenvalues.pow_(power)
     result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
+    if ((error := result.imag) > 1e-4).any():
+        print("image error:", error)
     return result.real.to(dtype=matrix.dtype)
 
 
