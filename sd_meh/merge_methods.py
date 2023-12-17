@@ -231,7 +231,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
 
     a_centroid = a_neurons.mean(0)
     b_centroid = b_neurons.mean(0)
-    new_centroid = sample_ellipsis(a_centroid, b_centroid, 2 * torch.pi * alpha)
+    new_centroid = weighted_sum(a_centroid, b_centroid, alpha)
     if len(a.shape) == 1 or len(a.shape) == 2 and a.shape[0] == 1:
         return new_centroid.reshape_as(a)
 
@@ -239,15 +239,13 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     b_neurons -= b_centroid
 
     svd_driver = "gesvd" if a.is_cuda else None
-    u, _, v_t = torch.linalg.svd(
-        a_neurons.T @ b_neurons, full_matrices=False, driver=svd_driver
-    )
+    u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
 
     alpha_is_float = alpha != round(alpha)
     if alpha_is_float:
         # cancel reflection. without this, eigenvalues often have a complex component
         #   and then we can't obtain a valid dtype for the merge
-        u[:, -1] /= torch.det(u) * torch.det(v_t)
+        u[:, -1] *= torch.nan_to_num(1 / (torch.det(u) * torch.det(v_t)))
 
     transform = rotation = u @ v_t
     print("shape:", transform.shape)
@@ -282,14 +280,3 @@ def fractional_matrix_power(matrix: Tensor, power: float):
     if ((error := result.imag) > 1e-4).any():
         print("image error:", error)
     return result.real.to(dtype=matrix.dtype)
-
-
-def sample_ellipsis(a, b, t):
-    return torch.column_stack((a, b)) @ torch.tensor(
-        [
-            math.sin(t),
-            math.cos(t),
-        ],
-        dtype=a.dtype,
-        device=a.device,
-    )
