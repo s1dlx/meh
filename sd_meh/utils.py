@@ -17,10 +17,12 @@ def compute_weights(weights, base):
     if not weights:
         return [base] * NUM_TOTAL_BLOCKS
 
+    if "," not in weights:
+        return weights
+
     w_alpha = list(map(float, weights.split(",")))
-    w_alpha[len(w_alpha):NUM_TOTAL_BLOCKS] = [w_alpha[-1]] * max(0, NUM_TOTAL_BLOCKS - len(w_alpha))
-    w_alpha[NUM_TOTAL_BLOCKS:] = ()
-    return w_alpha
+    if len(w_alpha) == NUM_TOTAL_BLOCKS:
+        return w_alpha
 
 
 def assemble_weights_and_bases(preset, weights, base, greek_letter):

@@ -251,10 +251,14 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
 
     transform = rotation = u @ v_t
     if not torch.isfinite(u).all():
-        raise ValueError(textwrap.dedent(f"""determinant error: {torch.det(rotation)}.
+        raise ValueError(
+            textwrap.dedent(
+                f"""determinant error: {torch.det(rotation)}.
             This can happen when merging on the CPU with the "rotate" method.
             Consider merging on a cuda device, or try setting alpha to 1 for the problematic blocks.
-            See this related discussion for more info: https://github.com/s1dlx/meh/pull/50#discussion_r1429469484"""))
+            See this related discussion for more info: https://github.com/s1dlx/meh/pull/50#discussion_r1429469484"""
+            )
+        )
 
     if alpha_is_float:
         transform = fractional_matrix_power(transform, alpha)
