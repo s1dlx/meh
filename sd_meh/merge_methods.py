@@ -248,7 +248,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
         u[:, -1] *= torch.nan_to_num(1 / (torch.det(u) * torch.det(v_t)))
 
     transform = rotation = u @ v_t
-    print("shape:", transform.shape)
+    print(f"shape: {a.shape} -> {a_neurons.shape} -> {transform.shape}")
     det = torch.det(transform)
     if torch.abs(det.abs() - 1) > 1e-6:
         print("determinant error:", det)
