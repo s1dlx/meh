@@ -247,7 +247,7 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     if alpha_is_float:
         # cancel reflection. without this, eigenvalues often have a complex component
         #   and then we can't obtain a valid dtype for the merge
-        u[:, -1] /= (torch.det(u) * torch.det(v_t))
+        u[:, -1] /= torch.det(u) * torch.det(v_t)
 
     transform = rotation = u @ v_t
     if not torch.isfinite(u).all():
