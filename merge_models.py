@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
 import logging
 
 import click
 
 from sd_meh.merge import merge_models, save_model
 from sd_meh.presets import BLOCK_WEIGHTS_PRESETS
-from utils import MERGE_METHODS, weights_and_bases
+from sd_meh.utils import MERGE_METHODS, weights_and_bases
 
 
 @click.command()

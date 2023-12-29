@@ -154,15 +154,12 @@ def merge_models(
             bases,
             merge_mode,
             precision=precision,
-            weights_clip=False,
+            weights_clip=weights_clip,
             iterations=iterations,
             device=device,
             work_device=work_device,
             threads=threads,
         )
-        # clip only after the last re-basin iteration
-        if weights_clip:
-            merged = clip_weights(thetas, merged)
     else:
         merged = simple_merge(
             thetas,
@@ -354,7 +351,7 @@ def rebasin_merge(
             new_bases,
             merge_mode,
             precision,
-            weights_clip,
+            False,
             device,
             work_device,
             threads,
@@ -399,6 +396,11 @@ def rebasin_merge(
         )
 
         log_vram("model a updated")
+
+    if weights_clip:
+        clip_thetas = thetas.copy()
+        clip_thetas["model_a"] = model_a
+        thetas["model_a"] = clip_weights(thetas, thetas["model_a"])
 
     return thetas["model_a"]
 
@@ -470,7 +472,6 @@ def merge_key(
 
         # dealing wiht pix2pix and inpainting models
         if (a_size := merge_args["a"].size()) != (b_size := merge_args["b"].size()):
-            print(key, a_size, b_size)
             if a_size[1] > b_size[1]:
                 merged_key = merge_args["a"]
             else:
