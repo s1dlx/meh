@@ -23,6 +23,7 @@ from sd_meh.rebasin import (
     weight_matching,
 )
 
+
 logging.getLogger("sd_meh").addHandler(logging.NullHandler())
 MAX_TOKENS = 77
 NUM_INPUT_BLOCKS = 12
@@ -143,6 +144,8 @@ def merge_models(
     work_device: Optional[str] = None,
     prune: bool = False,
     threads: int = 1,
+    sum_mode: str = 'normal',
+    diff_mode: str = 'normal',
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
@@ -159,6 +162,8 @@ def merge_models(
             device=device,
             work_device=work_device,
             threads=threads,
+            sum_mode=sum_mode,
+            diff_mode=diff_mode,
         )
     else:
         merged = simple_merge(
@@ -171,6 +176,8 @@ def merge_models(
             device=device,
             work_device=work_device,
             threads=threads,
+            sum_mode=sum_mode,
+            diff_mode=diff_mode,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -223,59 +230,14 @@ def simple_merge(
     device: str = "cpu",
     work_device: Optional[str] = None,
     threads: int = 1,
+    sum_mode: str = 'normal',
+    diff_mode: str = 'normal',
 ) -> Dict:
     futures = []
     sim = None
     sims = None
-    cos = tuple(
-        [
-            "cosineA",
-            "cosineB",
-            "cosA_similarity_add_difference",
-            "cosA_similarity_smooth_add_difference",
-            "cosA_similarity_add_trained_difference",
-            "cosA_similarity_smooth_add_trained_difference",
-        ]
-    )
-    if merge_mode in cos:
-        sim = torch.nn.CosineSimilarity(dim=0)
-        sims = np.array([], dtype=np.float64)
-        for key in tqdm(thetas["model_a"].keys(), desc="stage 0"):
-            # skip VAE model parameters to get better results
-            if "first_stage_model" in key:
-                continue
-            if "model" in key and key in thetas["model_b"].keys():
-                if merge_mode != "cosineB":
-                    theta_A_norm = torch.nn.functional.normalize(
-                        thetas["model_a"][key].to(torch.float32), p=2, dim=0
-                    )
-                    theta_B_norm = torch.nn.functional.normalize(
-                        thetas["model_b"][key].to(torch.float32), p=2, dim=0
-                    )
-                    simab = sim(theta_A_norm, theta_B_norm)
-                    sims = np.append(sims, simab.numpy())
-                else:
-                    simab = sim(
-                        thetas["model_a"][key].to(torch.float32),
-                        thetas["model_b"][key].to(torch.float32),
-                    )
-                    dot_product = torch.dot(
-                        thetas["model_a"][key].view(-1).to(torch.float32),
-                        thetas["model_b"][key].view(-1).to(torch.float32),
-                    )
-                    magnitude_similarity = dot_product / (
-                        torch.norm(thetas["model_a"][key].to(torch.float32))
-                        * torch.norm(thetas["model_a"][key].to(torch.float32))
-                    )
-                    combined_similarity = (simab + magnitude_similarity) / 2.0
-                    sims = np.append(sims, combined_similarity.numpy())
-            sims = np.delete(
-                sims, np.where(sims < np.percentile(sims, 1, method="midpoint"))
-            )
-            sims = np.delete(
-                sims, np.where(sims > np.percentile(sims, 99, method="midpoint"))
-            )
-            log_vram("after stage 0")
+    if sum_mode in ['cos_a', 'cos_b']:
+        sims, sims = get_cos_similarity(thetas, sum_mode)
 
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
         with ThreadPoolExecutor(max_workers=threads) as executor:
@@ -292,6 +254,8 @@ def simple_merge(
                     weights_clip,
                     device,
                     work_device,
+                    sum_mode,
+                    diff_mode,
                     sim,
                     sims,
                 )
@@ -326,6 +290,8 @@ def rebasin_merge(
     device="cpu",
     work_device=None,
     threads: int = 1,
+    sum_mode: str = 'normal',
+    diff_mode: str = 'normal',
 ):
     # WARNING: not sure how this does when 3 models are involved...
 
@@ -355,6 +321,8 @@ def rebasin_merge(
             device,
             work_device,
             threads,
+            sum_mode,
+            diff_mode,
         )
 
         log_vram("simple merge done")
@@ -547,3 +515,45 @@ def save_model(model, output_file, file_format) -> None:
         )
     else:
         torch.save({"state_dict": model}, f"{output_file}.ckpt")
+
+
+def get_cos_similarity(thetas, sum_mode):
+    sim = torch.nn.CosineSimilarity(dim=0)
+    sims = np.array([], dtype=np.float64)
+    for key in tqdm(thetas["model_a"].keys(), desc="stage 0"):
+        # skip VAE model parameters to get better results
+        if "first_stage_model" in key:
+            continue
+        if "model" in key and key in thetas["model_b"].keys():
+            if sum_mode == 'cos_a':
+                theta_A_norm = torch.nn.functional.normalize(
+                    thetas["model_a"][key].to(torch.float32), p=2, dim=0
+                )
+                theta_B_norm = torch.nn.functional.normalize(
+                    thetas["model_b"][key].to(torch.float32), p=2, dim=0
+                )
+                simab = sim(theta_A_norm, theta_B_norm)
+                sims = np.append(sims, simab.numpy())
+            elif sum_mode == 'cos_b':
+                simab = sim(
+                    thetas["model_a"][key].to(torch.float32),
+                    thetas["model_b"][key].to(torch.float32),
+                )
+                dot_product = torch.dot(
+                    thetas["model_a"][key].view(-1).to(torch.float32),
+                    thetas["model_b"][key].view(-1).to(torch.float32),
+                )
+                magnitude_similarity = dot_product / (
+                        torch.norm(thetas["model_a"][key].to(torch.float32))
+                        * torch.norm(thetas["model_a"][key].to(torch.float32))
+                )
+                combined_similarity = (simab + magnitude_similarity) / 2.0
+                sims = np.append(sims, combined_similarity.numpy())
+        sims = np.delete(
+            sims, np.where(sims < np.percentile(sims, 1, method="midpoint"))
+        )
+        sims = np.delete(
+            sims, np.where(sims > np.percentile(sims, 99, method="midpoint"))
+        )
+        log_vram("after stage 0")
+        return sim, sims
