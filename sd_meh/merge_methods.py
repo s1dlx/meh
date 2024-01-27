@@ -291,12 +291,15 @@ def fractional_matrix_power(matrix: Tensor, power: float, cache: dict):
     if cache is not None and "eigenvalues" in cache:
         eigenvalues = cache["eigenvalues"].to(matrix.device)
         eigenvectors = cache["eigenvectors"].to(matrix.device)
+        eigenvectors_inv = cache["eigenvectors_inv"].to(matrix.device)
     else:
         eigenvalues, eigenvectors = torch.linalg.eig(matrix)
+        eigenvectors_inv = torch.linalg.inv(eigenvectors)
         if cache is not None:
             cache["eigenvalues"] = eigenvalues.cpu()
             cache["eigenvectors"] = eigenvectors.cpu()
+            cache["eigenvectors_inv"] = eigenvectors_inv.cpu()
 
     eigenvalues.pow_(power)
-    result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
+    result = eigenvectors @ torch.diag(eigenvalues) @ eigenvectors_inv
     return result.real.to(dtype=matrix.dtype)
