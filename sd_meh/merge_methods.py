@@ -240,28 +240,35 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     a_neurons -= a_centroid
     b_neurons -= b_centroid
 
-    svd_driver = "gesvd" if a.is_cuda else None
-    u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
-
     alpha_is_float = alpha != round(alpha)
-    if alpha_is_float:
-        # cancel reflection. without this, eigenvalues often have a complex component
-        #   and then we can't obtain a valid dtype for the merge
-        u[:, -1] /= torch.det(u) * torch.det(v_t)
 
-    transform = rotation = u @ v_t
-    if not torch.isfinite(u).all():
-        raise ValueError(
-            textwrap.dedent(
-                f"""determinant error: {torch.det(rotation)}.
-            This can happen when merging on the CPU with the "rotate" method.
-            Consider merging on a cuda device, or try setting alpha to 1 for the problematic blocks.
-            See this related discussion for more info: https://github.com/s1dlx/meh/pull/50#discussion_r1429469484"""
+    if kwargs["cache"] is not None and "rotation" in kwargs["cache"]:
+        rotation = transform = kwargs["cache"]["rotation"].to(a.device)
+    else:
+        svd_driver = "gesvd" if a.is_cuda else None
+        u, _, v_t = torch.linalg.svd(a_neurons.T @ b_neurons, driver=svd_driver)
+
+        if alpha_is_float:
+            # cancel reflection. without this, eigenvalues often have a complex component
+            #   and then we can't obtain a valid dtype for the merge
+            u[:, -1] /= torch.det(u) * torch.det(v_t)
+
+        rotation = transform = u @ v_t
+        if not torch.isfinite(u).all():
+            raise ValueError(
+                textwrap.dedent(
+                    f"""determinant error: {torch.det(rotation)}.
+                This can happen when merging on the CPU with the "rotate" method.
+                Consider merging on a cuda device, or try setting alpha to 1 for the problematic blocks.
+                See this related discussion for more info: https://github.com/s1dlx/meh/pull/50#discussion_r1429469484"""
+                )
             )
-        )
+
+        if kwargs["cache"] is not None:
+            kwargs["cache"]["rotation"] = rotation.cpu()
 
     if alpha_is_float:
-        transform = fractional_matrix_power(transform, alpha)
+        transform = fractional_matrix_power(transform, alpha, kwargs["cache"])
     elif alpha == 0:
         transform = torch.eye(
             len(transform),
@@ -280,8 +287,16 @@ def rotate(a: Tensor, b: Tensor, alpha: float, beta: float, **kwargs):
     return a_neurons.reshape_as(a).to(a.dtype)
 
 
-def fractional_matrix_power(matrix: Tensor, power: float):
-    eigenvalues, eigenvectors = torch.linalg.eig(matrix)
+def fractional_matrix_power(matrix: Tensor, power: float, cache: dict):
+    if cache is not None and "eigenvalues" in cache:
+        eigenvalues = cache["eigenvalues"].to(matrix.device)
+        eigenvectors = cache["eigenvectors"].to(matrix.device)
+    else:
+        eigenvalues, eigenvectors = torch.linalg.eig(matrix)
+        if cache is not None:
+            cache["eigenvalues"] = eigenvalues.cpu()
+            cache["eigenvectors"] = eigenvectors.cpu()
+
     eigenvalues.pow_(power)
     result = eigenvectors @ torch.diag(eigenvalues) @ torch.linalg.inv(eigenvectors)
     return result.real.to(dtype=matrix.dtype)

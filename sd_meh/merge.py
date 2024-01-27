@@ -141,6 +141,7 @@ def merge_models(
     work_device: Optional[str] = None,
     prune: bool = False,
     threads: int = 1,
+    cache: Optional[Dict] = None,
 ) -> Dict:
     thetas = load_thetas(models, prune, device, precision)
 
@@ -169,6 +170,7 @@ def merge_models(
             device=device,
             work_device=work_device,
             threads=threads,
+            cache=cache,
         )
 
     return un_prune_model(merged, thetas, models, device, prune, precision)
@@ -221,6 +223,7 @@ def simple_merge(
     device: str = "cpu",
     work_device: Optional[str] = None,
     threads: int = 1,
+    cache: Optional[Dict] = None,
 ) -> Dict:
     futures = []
     with tqdm(thetas["model_a"].keys(), desc="stage 1") as progress:
@@ -238,6 +241,7 @@ def simple_merge(
                     weights_clip,
                     device,
                     work_device,
+                    cache,
                 )
                 futures.append(future)
 
@@ -367,6 +371,7 @@ def merge_key(
     weights_clip: bool = False,
     device: str = "cpu",
     work_device: Optional[str] = None,
+    cache: Optional[Dict] = None,
 ) -> Optional[Tuple[str, Dict]]:
     if work_device is None:
         work_device = device
@@ -410,7 +415,7 @@ def merge_key(
         except AttributeError as e:
             raise ValueError(f"{merge_mode} not implemented, aborting merge!") from e
 
-        merge_args = get_merge_method_args(current_bases, thetas, key, work_device)
+        merge_args = get_merge_method_args(current_bases, thetas, key, work_device, cache)
 
         # dealing wiht pix2pix and inpainting models
         if (a_size := merge_args["a"].size()) != (b_size := merge_args["b"].size()):
@@ -460,11 +465,16 @@ def get_merge_method_args(
     thetas: Dict,
     key: str,
     work_device: str,
+    cache: Optional[Dict],
 ) -> Dict:
+    if cache is not None and key not in cache:
+        cache[key] = {}
+
     merge_method_args = {
         "a": thetas["model_a"][key].to(work_device),
         "b": thetas["model_b"][key].to(work_device),
         **current_bases,
+        "cache": cache[key]
     }
 
     if "model_c" in thetas:
