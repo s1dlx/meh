@@ -474,7 +474,7 @@ def get_merge_method_args(
         "a": thetas["model_a"][key].to(work_device),
         "b": thetas["model_b"][key].to(work_device),
         **current_bases,
-        "cache": cache[key]
+        "cache": cache[key] if cache is not None else None,
     }
 
     if "model_c" in thetas:
