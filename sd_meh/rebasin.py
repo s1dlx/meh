@@ -2200,11 +2200,9 @@ def apply_permutation(ps: PermutationSpec, perm, params):
 def update_model_a(ps: PermutationSpec, perm, model_a, new_alpha):
     for k in model_a:
         try:
-            perm_params = get_permuted_param(
-                ps, perm, k, model_a
-            )
+            perm_params = get_permuted_param(ps, perm, k, model_a)
             model_a[k] = model_a[k] * (1 - new_alpha) + new_alpha * perm_params
-        except RuntimeError: # dealing with pix2pix and inpainting models
+        except RuntimeError:  # dealing with pix2pix and inpainting models
             continue
     return model_a
 
