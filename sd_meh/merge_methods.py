@@ -215,11 +215,7 @@ def filter_top_k(a: Tensor, k: float):
 def add_perpendicular(
     a: Tensor, b: Tensor, alpha: float, c: Tensor = None, **kwargs
 ) -> Tensor:
-    if c is None:
-        c = a
-
-    a = a.float()
-    b = b.float()
-    c = c.float()
-    b_perp = b - c * torch.sum(c * b) / torch.norm(c) ** 2
-    return a + alpha * b_perp
+    a_diff = a.float() - c.float()
+    b_diff = b.float() - c.float()
+    b_ortho = b_diff * torch.sum(a_diff * b_diff) / torch.norm(b_diff) ** 2
+    return (a + alpha * b_ortho).to(a.dtype)
