@@ -217,5 +217,9 @@ def add_perpendicular(
 ) -> Tensor:
     a_diff = a.float() - c.float()
     b_diff = b.float() - c.float()
-    b_perp = b_diff - a_diff * torch.sum(a_diff * b_diff) / torch.norm(a_diff) ** 2
-    return (a + alpha * b_perp).to(a.dtype)
+    a_ortho = a_diff * (a_diff / torch.linalg.norm(a_diff) * (b_diff / torch.linalg.norm(a_diff))).sum()
+    b_perp = b_diff - a_ortho
+    res = a + alpha * b_perp
+    if torch.isnan(res).any():
+        return a
+    return res.to(a.dtype)
